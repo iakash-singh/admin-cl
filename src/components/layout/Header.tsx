@@ -23,7 +23,7 @@ export default function Header({ activeSection }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white border-b border-gray-200 py-4 px-20">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">{getSectionTitle(activeSection)}</h2>
@@ -31,7 +31,7 @@ export default function Header({ activeSection }: HeaderProps) {
             Manage your rental platform with comprehensive administrative tools
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           {/* Search */}
           <div className="relative">

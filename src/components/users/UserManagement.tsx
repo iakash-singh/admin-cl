@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { User, UserPlus, Mail, Calendar, MapPin, Shield, Eye } from 'lucide-react';
+import { User, UserPlus, Mail, Calendar, MapPin, Shield, Eye, X } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
 import { mockUsers, mockAnalytics } from '../../data/mockData';
 import { User as UserType } from '../../types';
+import { createPortal } from 'react-dom';
 
 export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
@@ -39,11 +40,10 @@ export default function UserManagement() {
       key: 'userType',
       label: 'Type',
       render: (value: string) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-          value === 'admin' ? 'bg-purple-100 text-purple-800' :
-          value === 'vendor' ? 'bg-blue-100 text-blue-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
+        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${value === 'admin' ? 'bg-purple-100 text-purple-800' :
+            value === 'vendor' ? 'bg-blue-100 text-blue-800' :
+              'bg-gray-100 text-gray-800'
+          }`}>
           {value.charAt(0).toUpperCase() + value.slice(1)}
         </span>
       )
@@ -52,11 +52,10 @@ export default function UserManagement() {
       key: 'status',
       label: 'Status',
       render: (value: string) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-          value === 'active' ? 'bg-green-100 text-green-800' :
-          value === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
-        }`}>
+        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${value === 'active' ? 'bg-green-100 text-green-800' :
+            value === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+          }`}>
           {value.charAt(0).toUpperCase() + value.slice(1)}
         </span>
       )
@@ -148,7 +147,7 @@ export default function UserManagement() {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '89%' }}></div>
-            </div>
+            </div>  
           </div>
         </div>
 
@@ -182,88 +181,89 @@ export default function UserManagement() {
       />
 
       {/* User Detail Modal */}
-      {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">User Details</h3>
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="flex items-center space-x-4">
-                {selectedUser.avatar ? (
-                  <img src={selectedUser.avatar} alt={selectedUser.name} className="w-16 h-16 rounded-full" />
-                ) : (
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="h-8 w-8 text-blue-600" />
-                  </div>
-                )}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900">{selectedUser.name}</h4>
-                  <p className="text-sm text-gray-500">{selectedUser.email}</p>
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full mt-1 ${
-                    selectedUser.status === 'active' ? 'bg-green-100 text-green-800' :
-                    selectedUser.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {selectedUser.status.charAt(0).toUpperCase() + selectedUser.status.slice(1)}
-                  </span>
+      {selectedUser && createPortal(
+        (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">User Details</h3>
+                  <button
+                    onClick={() => setSelectedUser(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X />
+                  </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-4">
+              <div className="p-6 space-y-6">
+                <div className="flex items-center space-x-4">
+                  {selectedUser.avatar ? (
+                    <img src={selectedUser.avatar} alt={selectedUser.name} className="w-16 h-16 rounded-full" />
+                  ) : (
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="h-8 w-8 text-blue-600" />
+                    </div>
+                  )}
                   <div>
-                    <label className="text-sm font-medium text-gray-500">User Type</label>
-                    <p className="text-sm text-gray-900 capitalize">{selectedUser.userType}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Registration Date</label>
-                    <p className="text-sm text-gray-900">{new Date(selectedUser.registrationDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Last Active</label>
-                    <p className="text-sm text-gray-900">{new Date(selectedUser.lastActive).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Total Rentals</label>
-                    <p className="text-sm text-gray-900">{selectedUser.totalRentals}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Total Spent</label>
-                    <p className="text-sm text-gray-900">${selectedUser.totalSpent.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Location</label>
-                    <p className="text-sm text-gray-900">{selectedUser.location}</p>
+                    <h4 className="text-lg font-semibold text-gray-900">{selectedUser.name}</h4>
+                    <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full mt-1 ${selectedUser.status === 'active' ? 'bg-green-100 text-green-800' :
+                        selectedUser.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                      }`}>
+                      {selectedUser.status.charAt(0).toUpperCase() + selectedUser.status.slice(1)}
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex space-x-3 pt-4 border-t border-gray-200">
-                <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                  Send Message
-                </button>
-                <button className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
-                  View Orders
-                </button>
-                <button className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50">
-                  Suspend
-                </button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">User Type</label>
+                      <p className="text-sm text-gray-900 capitalize">{selectedUser.userType}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Registration Date</label>
+                      <p className="text-sm text-gray-900">{new Date(selectedUser.registrationDate).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Last Active</label>
+                      <p className="text-sm text-gray-900">{new Date(selectedUser.lastActive).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Total Rentals</label>
+                      <p className="text-sm text-gray-900">{selectedUser.totalRentals}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Total Spent</label>
+                      <p className="text-sm text-gray-900">${selectedUser.totalSpent.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Location</label>
+                      <p className="text-sm text-gray-900">{selectedUser.location}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3 pt-4 border-t border-gray-200">
+                  <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Send Message
+                  </button>
+                  <button className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
+                    View Orders
+                  </button>
+                  <button className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50">
+                    Suspend
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        ), document.body
       )}
     </div>
   );
