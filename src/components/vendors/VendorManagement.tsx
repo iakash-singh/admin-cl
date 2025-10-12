@@ -1,13 +1,39 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Store, CheckCircle, Clock, XCircle, TrendingUp, Package, DollarSign, Star } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
-import { mockVendors, mockAnalytics } from '../../data/mockData';
+import { mockVendors } from '../../data/mockData';
 import { Vendor } from '../../types';
 
 export default function VendorManagement() {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
-  const { vendors } = mockAnalytics;
+  const [totalVendors, setTotalVendors] = useState(0);
+  const [approvedVendors, setApprovedVendors] = useState(0);
+  const [avgRevenue, setAvgRevenue] = useState(0);
+  const [verificationStatus, setVerificationStatus] = useState({ verified: 0, pending: 0, rejected: 0 });
+  // const { vendors } = mockAnalytics;
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/vendors/total-vendors")
+      .then(res => res.json())
+      .then(data => setTotalVendors(data.totalVendors))
+      .catch(err => console.error('Error fetching total vendors:', err));
+
+      fetch("http://localhost:3000/api/vendors/pending-vendors")
+      .then(res => res.json())
+      .then(data => setApprovedVendors(data.pendingApprovals))
+      .catch(err => console.error('Error fetching total vendors:', err));
+
+      fetch("http://localhost:3000/api/vendors/avg-revenue")
+      .then(res => res.json())
+      .then(data => setAvgRevenue(data.averageRevenue))
+      .catch(err => console.error('Error fetching total vendors:', err));
+
+      fetch("http://localhost:3000/api/vendors/verification-status")
+      .then(res => res.json())
+      .then(data => setVerificationStatus(data))
+      .catch(err => console.error('Error fetching total vendors:', err));
+  }, []);
 
   const vendorColumns = [
     {
@@ -92,7 +118,7 @@ export default function VendorManagement() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Vendors"
-          value={vendors.totalVendors}
+          value={totalVendors}
           change={8.2}
           changeType="increase"
           icon={Store}
@@ -100,25 +126,17 @@ export default function VendorManagement() {
         />
         <StatCard
           title="Pending Approval"
-          value={vendors.pendingApproval}
+          value={approvedVendors}
           icon={Clock}
           color="yellow"
         />
         <StatCard
           title="Average Revenue"
-          value={`$${vendors.averageRevenue.toLocaleString()}`}
+          value={`$${avgRevenue.toLocaleString()}`}
           change={5.7}
           changeType="increase"
           icon={DollarSign}
           color="green"
-        />
-        <StatCard
-          title="Inventory Efficiency"
-          value={`${vendors.inventoryEfficiency}%`}
-          change={3.1}
-          changeType="increase"
-          icon={TrendingUp}
-          color="purple"
         />
       </div>
 
@@ -130,19 +148,22 @@ export default function VendorManagement() {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Verified</span>
               <span className="text-sm font-medium text-emerald-600">
-                {mockVendors.filter(v => v.verificationStatus === 'verified').length}
+                {/* {mockVendors.filter(v => v.verificationStatus === 'verified').length} */}
+                {verificationStatus.verified}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Pending</span>
               <span className="text-sm font-medium text-yellow-600">
-                {mockVendors.filter(v => v.verificationStatus === 'pending').length}
+                {/* {mockVendors.filter(v => v.verificationStatus === 'pending').length} */}
+                {verificationStatus.pending}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Rejected</span>
               <span className="text-sm font-medium text-red-600">
-                {mockVendors.filter(v => v.verificationStatus === 'rejected').length}
+                {/* {mockVendors.filter(v => v.verificationStatus === 'rejected').length} */}
+                {verificationStatus.rejected}
               </span>
             </div>
           </div>

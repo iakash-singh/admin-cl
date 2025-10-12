@@ -33,7 +33,7 @@ export default function DataTable({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Filter data based on search term
-  const filteredData = data.filter(row =>
+  const filteredData = (data ?? []).filter(row =>
     Object.values(row).some(value =>
       String(value).toLowerCase().includes(searchTerm.toLowerCase())
     )

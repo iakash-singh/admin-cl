@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { User, UserPlus, Calendar, Shield } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
-import { mockUsers, mockAnalytics } from '../../data/mockData';
+import { mockAnalytics } from '../../data/mockData';
 import { User as UserType } from '../../types';
 
 export default function UserManagement() {
@@ -47,7 +47,7 @@ export default function UserManagement() {
       try{
         const res = await fetch("http://localhost:3000/api/users/users");
         const data = await res.json();
-        setAllUsers(data.users);
+        setAllUsers(data);
       }
       catch(err){
         console.error('Error fetching all users:', err);
@@ -83,7 +83,7 @@ export default function UserManagement() {
       sortable: true
     },
     {
-      key: 'userType',
+      key: 'role',
       label: 'Type',
       render: (value: string) => (
         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
@@ -109,21 +109,21 @@ export default function UserManagement() {
       )
     },
     {
-      key: 'totalRentals',
+      key: 'rentals',
       label: 'Rentals',
       sortable: true
     },
     {
-      key: 'totalSpent',
+      key: 'total_spend',
       label: 'Total Spent',
       sortable: true,
-      render: (value: number) => `$${value.toLocaleString()}`
+      render: (value: number | null | undefined) => `$${(value??0).toLocaleString()}`
     },
     {
-      key: 'registrationDate',
+      key: 'created_at',
       label: 'Joined',
       sortable: true,
-      render: (value: string) => new Date(value).toLocaleDateString()
+      render: (value: string| null) => value ? new Date(value).toLocaleDateString() : "-"
     }
   ];
 
@@ -206,7 +206,7 @@ export default function UserManagement() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Signups</h3>
           <div className="space-y-3">
-            {mockUsers.slice(0, 3).map((user) => (
+            {/* {allUsers.slice(0, 3).map((user) => (
               <div key={user.id} className="flex items-center space-x-3">
                 {user.avatar ? (
                   <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
@@ -217,17 +217,17 @@ export default function UserManagement() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                  <p className="text-xs text-gray-500">{new Date(user.registrationDate).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-500">{new Date(user.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
-            ))}
+            ))} */}
           </div>
         </div>
       </div>
 
       {/* Users Table */}
       <DataTable
-        data={mockUsers}
+        data={Array.isArray(allUsers)? allUsers : []}
         columns={userColumns}
         onRowClick={(user) => setSelectedUser(user)}
       />
