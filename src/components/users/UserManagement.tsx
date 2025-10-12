@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, UserPlus, Mail, Calendar, MapPin, Shield, Eye } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { User, UserPlus, Mail, Calendar, Shield, Eye, MapPin } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
 import { mockUsers, mockAnalytics } from '../../data/mockData';
@@ -9,7 +9,8 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const { users } = mockAnalytics;
 
-  const userColumns = [
+  // ✅ Columns for DataTable
+  const userColumns = useMemo(() => [
     {
       key: 'avatar',
       label: 'Avatar',
@@ -25,16 +26,8 @@ export default function UserManagement() {
         </div>
       )
     },
-    {
-      key: 'name',
-      label: 'Name',
-      sortable: true
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      sortable: true
-    },
+    { key: 'name', label: 'Name', sortable: true },
+    { key: 'email', label: 'Email', sortable: true },
     {
       key: 'userType',
       label: 'Type',
@@ -61,64 +54,39 @@ export default function UserManagement() {
         </span>
       )
     },
-    {
-      key: 'totalRentals',
-      label: 'Rentals',
-      sortable: true
-    },
-    {
-      key: 'totalSpent',
-      label: 'Total Spent',
-      sortable: true,
-      render: (value: number) => `$${value.toLocaleString()}`
-    },
-    {
-      key: 'registrationDate',
-      label: 'Joined',
-      sortable: true,
-      render: (value: string) => new Date(value).toLocaleDateString()
-    }
-  ];
+    { key: 'totalRentals', label: 'Rentals', sortable: true, className: 'text-center' },
+    { key: 'totalSpent', label: 'Total Spent', sortable: true, render: (value: number) => `$${value.toLocaleString()}` },
+    { key: 'registrationDate', label: 'Joined', sortable: true, render: (value: string) => new Date(value).toLocaleDateString() }
+  ], []);
+
+  // ✅ Aggregate Stats for Cards
+  const stats = useMemo(() => [
+    { title: 'Total Users', value: users.totalUsers.toLocaleString(), change: users.userGrowthRate, changeType: 'increase', icon: User, color: 'blue' },
+    { title: 'New Users Today', value: users.newUsersToday, icon: UserPlus, color: 'green' },
+    { title: 'Conversion Rate', value: `${users.conversionRate}%`, change: 2.1, changeType: 'increase', icon: Shield, color: 'purple' },
+    { title: 'Retention Rate', value: `${users.retentionRate}%`, change: 1.5, changeType: 'increase', icon: Calendar, color: 'green' },
+  ], [users]);
 
   return (
     <div className="space-y-6">
-      {/* User Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Users"
-          value={users.totalUsers.toLocaleString()}
-          change={users.userGrowthRate}
-          changeType="increase"
-          icon={User}
-          color="blue"
-        />
-        <StatCard
-          title="New Users Today"
-          value={users.newUsersToday}
-          icon={UserPlus}
-          color="green"
-        />
-        <StatCard
-          title="Conversion Rate"
-          value={`${users.conversionRate}%`}
-          change={2.1}
-          changeType="increase"
-          icon={Shield}
-          color="purple"
-        />
-        <StatCard
-          title="Retention Rate"
-          value={`${users.retentionRate}%`}
-          change={1.5}
-          changeType="increase"
-          icon={Calendar}
-          color="green"
-        />
+      {/* ✅ Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, idx) => (
+          <StatCard
+            key={idx}
+            title={stat.title}
+            value={stat.value}
+            change={stat.change}
+            changeType={stat.changeType}
+            icon={stat.icon}
+            color={stat.color}
+          />
+        ))}
       </div>
 
-      {/* User Activity Overview */}
+      {/* ✅ User Activity Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">User Growth</h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -135,7 +103,7 @@ export default function UserManagement() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">User Engagement</h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -152,7 +120,7 @@ export default function UserManagement() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Signups</h3>
           <div className="space-y-3">
             {mockUsers.slice(0, 3).map((user) => (
@@ -174,29 +142,29 @@ export default function UserManagement() {
         </div>
       </div>
 
-      {/* Users Table */}
-      <DataTable
-        data={mockUsers}
-        columns={userColumns}
-        onRowClick={(user) => setSelectedUser(user)}
-      />
+      {/* ✅ Users Table */}
+      <div className="overflow-x-auto">
+        <DataTable
+          data={mockUsers}
+          columns={userColumns}
+          onRowClick={(user) => setSelectedUser(user)}
+        />
+      </div>
 
-      {/* User Detail Modal */}
+      {/* ✅ User Detail Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">User Details</h3>
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fade-in">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-gray-900">User Details</h3>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
             </div>
-            
+
             <div className="p-6 space-y-6">
               <div className="flex items-center space-x-4">
                 {selectedUser.avatar ? (
@@ -206,7 +174,7 @@ export default function UserManagement() {
                     <User className="h-8 w-8 text-blue-600" />
                   </div>
                 )}
-                <div>
+                <div className="flex-1 min-w-0">
                   <h4 className="text-lg font-semibold text-gray-900">{selectedUser.name}</h4>
                   <p className="text-sm text-gray-500">{selectedUser.email}</p>
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full mt-1 ${
@@ -219,47 +187,23 @@ export default function UserManagement() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">User Type</label>
-                    <p className="text-sm text-gray-900 capitalize">{selectedUser.userType}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Registration Date</label>
-                    <p className="text-sm text-gray-900">{new Date(selectedUser.registrationDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Last Active</label>
-                    <p className="text-sm text-gray-900">{new Date(selectedUser.lastActive).toLocaleDateString()}</p>
-                  </div>
+                  <p className="text-sm text-gray-500">User Type: <span className="font-medium capitalize text-gray-900">{selectedUser.userType}</span></p>
+                  <p className="text-sm text-gray-500">Joined: <span className="font-medium text-gray-900">{new Date(selectedUser.registrationDate).toLocaleDateString()}</span></p>
+                  <p className="text-sm text-gray-500">Last Active: <span className="font-medium text-gray-900">{new Date(selectedUser.lastActive).toLocaleDateString()}</span></p>
                 </div>
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Total Rentals</label>
-                    <p className="text-sm text-gray-900">{selectedUser.totalRentals}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Total Spent</label>
-                    <p className="text-sm text-gray-900">${selectedUser.totalSpent.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Location</label>
-                    <p className="text-sm text-gray-900">{selectedUser.location}</p>
-                  </div>
+                  <p className="text-sm text-gray-500">Total Rentals: <span className="font-medium text-gray-900">{selectedUser.totalRentals}</span></p>
+                  <p className="text-sm text-gray-500">Total Spent: <span className="font-medium text-gray-900">${selectedUser.totalSpent.toLocaleString()}</span></p>
+                  <p className="text-sm text-gray-500">Location: <span className="font-medium text-gray-900">{selectedUser.location}</span></p>
                 </div>
               </div>
 
-              <div className="flex space-x-3 pt-4 border-t border-gray-200">
-                <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                  Send Message
-                </button>
-                <button className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
-                  View Orders
-                </button>
-                <button className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50">
-                  Suspend
-                </button>
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
+                <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all">Send Message</button>
+                <button className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-all">View Orders</button>
+                <button className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-all">Suspend</button>
               </div>
             </div>
           </div>
