@@ -1,322 +1,226 @@
-import React, { useState } from 'react';
-import { Store, CheckCircle, Clock, XCircle, TrendingUp, Package, DollarSign, Star } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Store,
+  CheckCircle,
+  Clock,
+  XCircle,
+  DollarSign,
+  Star,
+  Search,
+  UserCheck,
+  X,
+} from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
-import { mockVendors, mockAnalytics } from '../../data/mockData';
+import { mockVendors } from '../../data/mockData';
 import { Vendor } from '../../types';
 
+// ✅ Reusable Badge for Verification Status (with fallback)
+const VerificationBadge = ({ status }: { status: Vendor['verificationStatus'] }) => {
+  const statusConfig = {
+    verified: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle, label: 'Verified' },
+    pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock, label: 'Pending' },
+    rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle, label: 'Rejected' },
+  };
+  const config = statusConfig[status] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: X, label: 'Unknown' };
+  const Icon = config.icon;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-x-1.5 py-1 px-2.5 text-xs font-medium rounded-full ${config.bg} ${config.text}`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {config.label}
+    </span>
+  );
+};
+
+// ✅ Reusable Badge for Onboarding Status (with fallback)
+const OnboardingBadge = ({ status }: { status: Vendor['onboardingStatus'] }) => {
+  const statusConfig = {
+    completed: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Completed' },
+    pending_review: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'In Review' },
+    incomplete: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Incomplete' },
+  };
+  const config = statusConfig[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Unknown' };
+
+  return (
+    <span
+      className={`inline-flex items-center py-1 px-2.5 text-xs font-medium rounded-full ${config.bg} ${config.text}`}
+    >
+      {config.label}
+    </span>
+  );
+};
+
 export default function VendorManagement() {
+  const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
-  const { vendors } = mockAnalytics;
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  useEffect(() => {
+    let filtered = mockVendors;
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter((v) => v.verificationStatus === filterStatus);
+    }
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (v) =>
+          v.businessName.toLowerCase().includes(lower) ||
+          v.ownerName.toLowerCase().includes(lower)
+      );
+    }
+    setVendors(filtered);
+  }, [filterStatus, searchTerm]);
+
+  const stats = useMemo(() => {
+    const totalRevenue = mockVendors.reduce((a, v) => a + (v.revenue || 0), 0);
+    const pending = mockVendors.filter((v) => v.verificationStatus === 'pending').length;
+    const topRated =
+      mockVendors.reduce((max, v) => ((v.rating || 0) > (max.rating || 0) ? v : max), mockVendors[0] || {}) || {};
+    return {
+      totalVendors: mockVendors.length,
+      pendingApproval: pending,
+      averageRevenue: mockVendors.length > 0 ? totalRevenue / mockVendors.length : 0,
+      topRatedVendor: topRated?.businessName || 'N/A',
+    };
+  }, []);
 
   const vendorColumns = [
     {
       key: 'businessName',
-      label: 'Business Name',
-      sortable: true
-    },
-    {
-      key: 'ownerName',
-      label: 'Owner',
-      sortable: true
-    },
-    {
-      key: 'businessType',
-      label: 'Category',
-      render: (value: string) => (
-        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-          {value}
-        </span>
-      )
+      label: 'Business & Owner',
+      render: (row: Vendor) => (
+        <div>
+          <p className="font-semibold text-gray-900">{row.businessName}</p>
+          <p className="text-xs text-gray-500">{row.ownerName}</p>
+        </div>
+      ),
     },
     {
       key: 'verificationStatus',
       label: 'Verification',
-      render: (value: string) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-          value === 'verified' ? 'bg-green-100 text-green-800' :
-          value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
-        }`}>
-          {value === 'verified' ? (
-            <CheckCircle className="h-3 w-3 mr-1" />
-          ) : value === 'pending' ? (
-            <Clock className="h-3 w-3 mr-1" />
-          ) : (
-            <XCircle className="h-3 w-3 mr-1" />
-          )}
-          {value.charAt(0).toUpperCase() + value.slice(1)}
-        </span>
-      )
+      render: (row: Vendor) => <VerificationBadge status={row.verificationStatus} />,
     },
     {
       key: 'onboardingStatus',
       label: 'Onboarding',
-      render: (value: string) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-          value === 'completed' ? 'bg-green-100 text-green-800' :
-          value === 'pending_review' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {value.replace('_', ' ').charAt(0).toUpperCase() + value.replace('_', ' ').slice(1)}
-        </span>
-      )
+      render: (row: Vendor) => <OnboardingBadge status={row.onboardingStatus} />,
     },
-    {
-      key: 'totalProducts',
-      label: 'Products',
-      sortable: true
-    },
+    { key: 'totalProducts', label: 'Products', className: 'text-center' },
     {
       key: 'rating',
       label: 'Rating',
-      sortable: true,
-      render: (value: number) => (
+      render: (row: Vendor) => (
         <div className="flex items-center">
-          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-          <span className="ml-1 text-sm font-medium">{value}</span>
+          <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+          <span className="ml-1 text-sm font-medium">{(row.rating || 0).toFixed(1)}</span>
         </div>
-      )
+      ),
     },
     {
       key: 'revenue',
       label: 'Revenue',
-      sortable: true,
-      render: (value: number) => `$${value.toLocaleString()}`
-    }
+      render: (row: Vendor) => `$${(row.revenue || 0).toLocaleString()}`,
+    },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Vendor Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Vendors"
-          value={vendors.totalVendors}
-          change={8.2}
-          changeType="increase"
-          icon={Store}
-          color="blue"
-        />
-        <StatCard
-          title="Pending Approval"
-          value={vendors.pendingApproval}
-          icon={Clock}
-          color="yellow"
-        />
-        <StatCard
-          title="Average Revenue"
-          value={`$${vendors.averageRevenue.toLocaleString()}`}
-          change={5.7}
-          changeType="increase"
-          icon={DollarSign}
-          color="green"
-        />
-        <StatCard
-          title="Inventory Efficiency"
-          value={`${vendors.inventoryEfficiency}%`}
-          change={3.1}
-          changeType="increase"
-          icon={TrendingUp}
-          color="purple"
-        />
+    <div className="space-y-8 animate-fadeIn">
+      {/* ✅ Header + Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard title="Total Vendors" value={stats.totalVendors.toLocaleString()} icon={Store} color="blue" />
+        <StatCard title="Pending Approval" value={stats.pendingApproval.toLocaleString()} icon={Clock} color="yellow" />
+        <StatCard title="Avg. Revenue" value={`$${stats.averageRevenue.toLocaleString()}`} icon={DollarSign} color="green" />
+        <StatCard title="Top Rated" value={stats.topRatedVendor} icon={UserCheck} color="purple" />
       </div>
 
-      {/* Vendor Performance Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Verification Status</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Verified</span>
-              <span className="text-sm font-medium text-emerald-600">
-                {mockVendors.filter(v => v.verificationStatus === 'verified').length}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Pending</span>
-              <span className="text-sm font-medium text-yellow-600">
-                {mockVendors.filter(v => v.verificationStatus === 'pending').length}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Rejected</span>
-              <span className="text-sm font-medium text-red-600">
-                {mockVendors.filter(v => v.verificationStatus === 'rejected').length}
-              </span>
-            </div>
+      {/* ✅ Filters + Table */}
+      <div className="bg-white/70 backdrop-blur-md rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 transition-all hover:shadow-xl">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 transition-all"
+            />
           </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full sm:w-auto border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all"
+          >
+            <option value="all">All Verification Statuses</option>
+            <option value="verified">Verified</option>
+            <option value="pending">Pending</option>
+            <option value="rejected">Rejected</option>
+          </select>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Onboarding Progress</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Completed</span>
-              <span className="text-sm font-medium text-emerald-600">
-                {mockVendors.filter(v => v.onboardingStatus === 'completed').length}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Under Review</span>
-              <span className="text-sm font-medium text-yellow-600">
-                {mockVendors.filter(v => v.onboardingStatus === 'pending_review').length}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Incomplete</span>
-              <span className="text-sm font-medium text-red-600">
-                {mockVendors.filter(v => v.onboardingStatus === 'incomplete').length}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performers</h3>
-          <div className="space-y-3">
-            {mockVendors
-              .sort((a, b) => b.revenue - a.revenue)
-              .slice(0, 3)
-              .map((vendor) => (
-                <div key={vendor.id} className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{vendor.businessName}</p>
-                    <p className="text-xs text-gray-500">{vendor.businessType}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">${vendor.revenue.toLocaleString()}</p>
-                    <div className="flex items-center">
-                      <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                      <span className="text-xs text-gray-500 ml-1">{vendor.rating}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
+        <DataTable data={vendors} columns={vendorColumns} onRowClick={(v) => setSelectedVendor(v as Vendor)} />
       </div>
 
-      {/* Vendors Table */}
-      <DataTable
-        data={mockVendors}
-        columns={vendorColumns}
-        onRowClick={(vendor) => setSelectedVendor(vendor)}
-      />
-
-      {/* Vendor Detail Modal */}
+      {/* ✅ Vendor Modal */}
       {selectedVendor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-900">Vendor Details</h3>
-                <button
-                  onClick={() => setSelectedVendor(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 hover:scale-[1.01]">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">{selectedVendor.businessName}</h3>
+                <p className="text-sm text-gray-500 mt-1">Owner: {selectedVendor.ownerName}</p>
               </div>
+              <button
+                onClick={() => setSelectedVendor(null)}
+                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition"
+              >
+                <X className="h-6 w-6" />
+              </button>
             </div>
-            
+
+            {/* Content */}
             <div className="p-6 space-y-6">
-              <div className="flex items-start space-x-6">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Store className="h-8 w-8 text-blue-600" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Contact Info</h4>
+                  <p className="text-sm text-gray-800">{selectedVendor.email}</p>
+                  <p className="text-sm text-gray-800">{selectedVendor.phone}</p>
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-semibold text-gray-900">{selectedVendor.businessName}</h4>
-                  <p className="text-sm text-gray-500 mb-2">{selectedVendor.ownerName}</p>
-                  <div className="flex items-center space-x-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      selectedVendor.verificationStatus === 'verified' ? 'bg-green-100 text-green-800' :
-                      selectedVendor.verificationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {selectedVendor.verificationStatus.charAt(0).toUpperCase() + selectedVendor.verificationStatus.slice(1)}
-                    </span>
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="ml-1 text-sm font-medium">{selectedVendor.rating}</span>
-                    </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Statuses</h4>
+                  <div className="flex flex-col items-start gap-2">
+                    <VerificationBadge status={selectedVendor.verificationStatus} />
+                    <OnboardingBadge status={selectedVendor.onboardingStatus} />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h5 className="font-medium text-gray-900">Business Information</h5>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Business Type</label>
-                      <p className="text-sm text-gray-900">{selectedVendor.businessType}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Email</label>
-                      <p className="text-sm text-gray-900">{selectedVendor.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Phone</label>
-                      <p className="text-sm text-gray-900">{selectedVendor.phone}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Address</label>
-                      <p className="text-sm text-gray-900">{selectedVendor.address}</p>
-                    </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                {[
+                  { label: 'Products', value: selectedVendor.totalProducts, color: 'blue' },
+                  { label: 'Revenue', value: `$${(selectedVendor.revenue || 0).toLocaleString()}`, color: 'green' },
+                  { label: 'Orders', value: selectedVendor.totalOrders, color: 'purple' },
+                  { label: 'Rating', value: (selectedVendor.rating || 0).toFixed(1), color: 'yellow' },
+                ].map((item) => (
+                  <div key={item.label} className={`bg-${item.color}-50 p-4 rounded-xl hover:scale-105 transition-transform`}>
+                    <p className={`text-sm font-medium text-${item.color}-800`}>{item.label}</p>
+                    <p className={`text-2xl font-bold text-${item.color}-900 mt-1`}>{item.value}</p>
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h5 className="font-medium text-gray-900">Performance Metrics</h5>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <Package className="h-5 w-5 text-blue-600" />
-                        <span className="ml-2 text-sm font-medium text-gray-900">Products</span>
-                      </div>
-                      <p className="text-2xl font-bold text-blue-600 mt-1">{selectedVendor.totalProducts}</p>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <DollarSign className="h-5 w-5 text-green-600" />
-                        <span className="ml-2 text-sm font-medium text-gray-900">Revenue</span>
-                      </div>
-                      <p className="text-2xl font-bold text-green-600 mt-1">${selectedVendor.revenue.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <TrendingUp className="h-5 w-5 text-purple-600" />
-                        <span className="ml-2 text-sm font-medium text-gray-900">Orders</span>
-                      </div>
-                      <p className="text-2xl font-bold text-purple-600 mt-1">{selectedVendor.totalOrders}</p>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <Star className="h-5 w-5 text-yellow-600" />
-                        <span className="ml-2 text-sm font-medium text-gray-900">Rating</span>
-                      </div>
-                      <p className="text-2xl font-bold text-yellow-600 mt-1">{selectedVendor.rating}</p>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              <div className="flex space-x-3 pt-4 border-t border-gray-200">
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                 {selectedVendor.verificationStatus === 'pending' && (
-                  <>
-                    <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                      Approve Vendor
-                    </button>
-                    <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-                      Reject Vendor
-                    </button>
-                  </>
+                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    Approve Vendor
+                  </button>
                 )}
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                  View Products
-                </button>
-                <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
+                <button className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
                   Send Message
                 </button>
               </div>
