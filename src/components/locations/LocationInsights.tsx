@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { MapPin, Users, Store, Package, DollarSign, TrendingUp, Search } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, Users, Store, Package, DollarSign, TrendingUp } from 'lucide-react';
 import StatCard from '../shared/StatCard';
 import DataTable from '../shared/DataTable';
 import { mockLocations } from '../../data/mockData';
@@ -11,8 +11,13 @@ export default function LocationInsights() {
   // Calculate totals
   const totalUsers = mockLocations.reduce((sum, loc) => sum + loc.userCount, 0);
   const totalVendors = mockLocations.reduce((sum, loc) => sum + loc.vendorCount, 0);
-  const totalRevenue = mockLocations.reduce((sum, loc) => sum + loc.revenue, 0);
-  const averageOrderValue = mockLocations.reduce((sum, loc) => sum + (loc.revenue / loc.orderCount), 0) / mockLocations.length;
+  // totalRevenue is available from mock data aggregations when needed
+  const averageOrderValue = (() => {
+    const locationsWithOrders = mockLocations.filter(loc => loc.orderCount > 0);
+    if (locationsWithOrders.length === 0) return 0;
+    const total = locationsWithOrders.reduce((sum, loc) => sum + (loc.revenue / loc.orderCount), 0);
+    return total / locationsWithOrders.length;
+  })();
 
   const locationColumns = [
     {
@@ -44,7 +49,7 @@ export default function LocationInsights() {
       render: (value: number) => (
         <div className="flex items-center">
           <Store className="h-4 w-4 text-green-500 mr-1" />
-          {value}
+          {value.toLocaleString()}
         </div>
       )
     },
@@ -73,12 +78,12 @@ export default function LocationInsights() {
     {
       key: 'marketDensity',
       label: 'Market Density',
-      render: (value: any, row: Location) => {
-        const density = row.userCount / row.vendorCount;
+      render: (_value: number, row: Location) => {
+        const density = row.vendorCount > 0 ? row.userCount / row.vendorCount : null;
         return (
           <div className="flex items-center">
             <TrendingUp className="h-4 w-4 text-blue-600 mr-1" />
-            {density.toFixed(1)} users/vendor
+            {density === null ? 'N/A' : `${density.toFixed(1)} users/vendor`}
           </div>
         );
       }
@@ -86,7 +91,8 @@ export default function LocationInsights() {
     {
       key: 'avgOrderValue',
       label: 'Avg Order Value',
-      render: (value: any, row: Location) => {
+      render: (_value: number, row: Location) => {
+        if (row.orderCount === 0) return '-';
         const avg = row.revenue / row.orderCount;
         return `$${avg.toFixed(0)}`;
       }
@@ -97,12 +103,7 @@ export default function LocationInsights() {
     <div className="space-y-6">
       {/* Location Overview Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Market Coverage"
-          value={mockLocations.length}
-          icon={MapPin}
-          color="blue"
-        />
+        <StatCard title="Total Market Coverage" value={mockLocations.length} icon={MapPin} color="blue" />
         <StatCard
           title="Total Active Users"
           value={totalUsers.toLocaleString()}
@@ -113,7 +114,7 @@ export default function LocationInsights() {
         />
         <StatCard
           title="Total Vendors"
-          value={totalVendors}
+          value={totalVendors.toLocaleString()}
           change={12.1}
           changeType="increase"
           icon={Store}
@@ -131,10 +132,11 @@ export default function LocationInsights() {
 
       {/* Market Performance Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Top Markets by Revenue */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Markets by Revenue</h3>
           <div className="space-y-3">
-            {mockLocations
+              {[...mockLocations]
               .sort((a, b) => b.revenue - a.revenue)
               .slice(0, 5)
               .map((location, index) => (
@@ -142,8 +144,8 @@ export default function LocationInsights() {
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-bold text-green-600">#{index + 1}</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{location.city}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{location.city}</p>
                     <p className="text-xs text-gray-500">{location.orderCount} orders</p>
                   </div>
                   <div className="text-right">
@@ -157,10 +159,11 @@ export default function LocationInsights() {
           </div>
         </div>
 
+        {/* User Concentration */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">User Concentration</h3>
           <div className="space-y-3">
-            {mockLocations
+              {[...mockLocations]
               .sort((a, b) => b.userCount - a.userCount)
               .slice(0, 5)
               .map((location, index) => (
@@ -168,12 +171,12 @@ export default function LocationInsights() {
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-bold text-blue-600">#{index + 1}</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{location.city}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{location.city}</p>
                     <p className="text-xs text-gray-500">{location.vendorCount} vendors</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{location.userCount} users</p>
+                    <p className="text-sm font-medium text-gray-900">{location.userCount}</p>
                     <p className="text-xs text-gray-500">
                       {((location.userCount / totalUsers) * 100).toFixed(1)}% of total
                     </p>
@@ -183,10 +186,11 @@ export default function LocationInsights() {
           </div>
         </div>
 
+        {/* Market Opportunity */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Market Opportunity</h3>
           <div className="space-y-3">
-            {mockLocations
+              {[...mockLocations]
               .map(location => ({
                 ...location,
                 opportunity: location.userCount / location.vendorCount
@@ -198,8 +202,8 @@ export default function LocationInsights() {
                   <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-bold text-purple-600">#{index + 1}</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{location.city}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{location.city}</p>
                     <p className="text-xs text-gray-500">High demand market</p>
                   </div>
                   <div className="text-right">
@@ -208,58 +212,6 @@ export default function LocationInsights() {
                   </div>
                 </div>
               ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Geographic Distribution Chart */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Geographic Market Analysis</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">Market Penetration</h4>
-            <div className="space-y-3">
-              {mockLocations.map((location) => {
-                const penetration = (location.orderCount / location.userCount) * 100;
-                return (
-                  <div key={location.city} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-900">{location.city}</span>
-                      <span className="text-sm text-gray-500">{penetration.toFixed(1)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${Math.min(penetration, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">Revenue Distribution</h4>
-            <div className="space-y-3">
-              {mockLocations.map((location) => {
-                const percentage = (location.revenue / totalRevenue) * 100;
-                return (
-                  <div key={location.city} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-900">{location.city}</span>
-                      <span className="text-sm text-gray-500">${location.revenue.toLocaleString()}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-green-600 h-2 rounded-full"
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </div>
       </div>
@@ -275,121 +227,50 @@ export default function LocationInsights() {
       {selectedLocation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{selectedLocation.city}</h3>
-                  <p className="text-sm text-gray-500 mt-1">Market Analysis & Insights</p>
-                </div>
-                <button
-                  onClick={() => setSelectedLocation(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">{selectedLocation.city}</h3>
+                <p className="text-sm text-gray-500 mt-1">Market Analysis & Insights</p>
               </div>
+              <button
+                onClick={() => setSelectedLocation(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center">
-                    <Users className="h-5 w-5 text-blue-600" />
-                    <span className="ml-2 text-sm font-medium text-gray-900">Users</span>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-600 mt-1">{selectedLocation.userCount}</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center">
-                    <Store className="h-5 w-5 text-green-600" />
-                    <span className="ml-2 text-sm font-medium text-gray-900">Vendors</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-600 mt-1">{selectedLocation.vendorCount}</p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <div className="flex items-center">
-                    <Package className="h-5 w-5 text-purple-600" />
-                    <span className="ml-2 text-sm font-medium text-gray-900">Orders</span>
-                  </div>
-                  <p className="text-2xl font-bold text-purple-600 mt-1">{selectedLocation.orderCount}</p>
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <div className="flex items-center">
-                    <DollarSign className="h-5 w-5 text-yellow-600" />
-                    <span className="ml-2 text-sm font-medium text-gray-900">Revenue</span>
-                  </div>
-                  <p className="text-2xl font-bold text-yellow-600 mt-1">${selectedLocation.revenue.toLocaleString()}</p>
-                </div>
-              </div>
-
-              {/* Market Analysis */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h5 className="font-medium text-gray-900">Market Metrics</h5>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Market Density</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {(selectedLocation.userCount / selectedLocation.vendorCount).toFixed(1)} users/vendor
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Average Order Value</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        ${(selectedLocation.revenue / selectedLocation.orderCount).toFixed(0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Market Penetration</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {((selectedLocation.orderCount / selectedLocation.userCount) * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Revenue per User</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        ${(selectedLocation.revenue / selectedLocation.userCount).toFixed(0)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h5 className="font-medium text-gray-900">Growth Opportunities</h5>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-green-50 rounded-lg">
-                      <p className="text-sm font-medium text-green-800">High User Demand</p>
-                      <p className="text-xs text-green-600">
-                        {(selectedLocation.userCount / selectedLocation.vendorCount).toFixed(1)} users per vendor indicates strong demand
-                      </p>
-                    </div>
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm font-medium text-blue-800">Revenue Potential</p>
-                      <p className="text-xs text-blue-600">
-                        ${(selectedLocation.revenue / selectedLocation.orderCount).toFixed(0)} average order value
-                      </p>
-                    </div>
-                    <div className="p-3 bg-purple-50 rounded-lg">
-                      <p className="text-sm font-medium text-purple-800">Market Share</p>
-                      <p className="text-xs text-purple-600">
-                        {((selectedLocation.revenue / totalRevenue) * 100).toFixed(1)}% of total platform revenue
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex space-x-3 pt-4 border-t border-gray-200">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                  View Market Report
-                </button>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                  Export Data
-                </button>
-                <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
-                  Compare Markets
-                </button>
+                <StatCard
+                  title="Users"
+                  value={selectedLocation.userCount.toLocaleString()}
+                  icon={Users}
+                  color="blue"
+                  small
+                />
+                <StatCard
+                  title="Vendors"
+                  value={selectedLocation.vendorCount.toLocaleString()}
+                  icon={Store}
+                  color="green"
+                  small
+                />
+                <StatCard
+                  title="Orders"
+                  value={selectedLocation.orderCount.toLocaleString()}
+                  icon={Package}
+                  color="purple"
+                  small
+                />
+                <StatCard
+                  title="Revenue"
+                  value={`$${selectedLocation.revenue.toLocaleString()}`}
+                  icon={DollarSign}
+                  color="yellow"
+                  small
+                />
               </div>
             </div>
           </div>
