@@ -1,32 +1,61 @@
-import React from 'react';
 import { TrendingUp, Users, DollarSign, Package, MapPin, Calendar, Star, ShoppingCart } from 'lucide-react';
 import StatCard from '../shared/StatCard';
-import { mockAnalytics, mockProducts, mockLocations } from '../../data/mockData';
+import { mockAnalytics, mockLocations } from '../../data/mockData';
+import { useEffect, useState } from 'react';
 
 export default function Analytics() {
-  const { users, vendors, orders, products } = mockAnalytics;
+  const { users, vendors, products } = mockAnalytics;
+  const [userMetrics, setUserMetrics] = useState({usersLastWeek:0, usersThisWeek:0, userGrowthRate:0});
+  const [conversionRate, setConversionRate] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [newUsersToday, setNewUsersToday] = useState(0);
+  useEffect(() => {
+    try{
+      fetch("http://localhost:3000/api/users/growth")
+    .then((response) => response.json())
+    .then((data) => setUserMetrics(data))
+    .catch(error => console.error('Error fetching user growth data:', error));
 
+    fetch("http://localhost:3000/api/users/conversion-rate")
+    .then((response) => response.json())
+    .then((data) => setConversionRate(data.conversionRate))
+    .catch(error => console.error('Error fetching user growth data:', error));
+      
+    fetch("http://localhost:3000/api/users/total-users")
+    .then((response) => response.json())
+    .then((data) => setTotalUsers(data.totalUsers))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/new-users-today")
+    .then((response) => response.json())
+    .then((data) => setNewUsersToday(data.newUsersToday))
+    .catch(error => console.error('Error fetching user growth data:', error));
+  }
+    catch(error){
+      console.error('Error in useEffect:', error);
+    }
+  },[])
   return (
     <div className="space-y-6">
       {/* Key Performance Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="User Growth Rate"
-          value={`${users.userGrowthRate}%`}
-          change={users.userGrowthRate}
+          value={`${userMetrics.userGrowthRate}`}
+          // change={users.userGrowthRate}
           changeType="increase"
           icon={TrendingUp}
           color="green"
         />
         <StatCard
           title="Conversion Rate"
-          value={`${users.conversionRate}%`}
-          change={2.1}
+          value={`${conversionRate}`}
+          // change={2.1}
           changeType="increase"
           icon={ShoppingCart}
           color="blue"
         />
-        <StatCard
+        {/* <StatCard
           title="Monthly Revenue"
           value={`$${orders.revenueThisMonth.toLocaleString()}`}
           change={15.7}
@@ -41,7 +70,7 @@ export default function Analytics() {
           changeType="increase"
           icon={Package}
           color="purple"
-        />
+        /> */}
       </div>
 
       {/* User Analytics */}
@@ -55,26 +84,26 @@ export default function Analytics() {
                   <Users className="h-5 w-5 text-blue-600" />
                   <span className="ml-2 text-sm font-medium text-gray-900">Total Users</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-600 mt-1">{users.totalUsers.toLocaleString()}</p>
-                <p className="text-xs text-gray-500 mt-1">+{users.userGrowthRate}% growth</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{totalUsers.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-1">+{userMetrics.toLocaleString()}% growth</p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center">
                   <Calendar className="h-5 w-5 text-green-600" />
                   <span className="ml-2 text-sm font-medium text-gray-900">New Today</span>
                 </div>
-                <p className="text-2xl font-bold text-green-600 mt-1">{users.newUsersToday}</p>
-                <p className="text-xs text-gray-500 mt-1">{users.newUsersThisWeek} this week</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">{newUsersToday}</p>
+                <p className="text-xs text-gray-500 mt-1">{userMetrics.usersThisWeek || 0} this week</p>
               </div>
             </div>
             
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Conversion Rate</span>
-                <span className="text-sm font-medium text-green-600">{users.conversionRate}%</span>
+                <span className="text-sm font-medium text-green-600">{conversionRate}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${users.conversionRate}%` }}></div>
+                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${conversionRate}` }}></div>
               </div>
               
               <div className="flex justify-between items-center">

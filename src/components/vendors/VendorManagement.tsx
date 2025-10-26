@@ -11,8 +11,9 @@ export default function VendorManagement() {
   const [approvedVendors, setApprovedVendors] = useState(0);
   const [avgRevenue, setAvgRevenue] = useState(0);
   const [verificationStatus, setVerificationStatus] = useState({ verified: 0, pending: 0, rejected: 0 });
+  const [onboardingStatus, setOnboardingStatus] = useState({ completed: 0, pending: 0, incomplete: 0 });
+  const [allVendors, setAllVendors] = useState<Vendor[]>([]);
   // const { vendors } = mockAnalytics;
-
   useEffect(() => {
     fetch("http://localhost:3000/api/vendors/total-vendors")
       .then(res => res.json())
@@ -33,11 +34,28 @@ export default function VendorManagement() {
       .then(res => res.json())
       .then(data => setVerificationStatus(data))
       .catch(err => console.error('Error fetching total vendors:', err));
+      
+      fetch("http://localhost:3000/api/vendors/onboarding-status")
+      .then(res => res.json())
+      .then(data => setOnboardingStatus(data))
+      .catch(err => console.error('Error fetching total vendors:', err));
+      
+      const fetchAllVendors = async () => {
+        try{
+          const res = await fetch("http://localhost:3000/api/vendors/all-vendors");
+          const data = await res.json()
+          setAllVendors(Array.isArray(data)? data : []);
+        }
+        catch(err){
+          console.error('Error fetching all vendors:', err);
+        }
+      }
+      fetchAllVendors();
   }, []);
 
   const vendorColumns = [
     {
-      key: 'businessName',
+      key: 'buisnessName',
       label: 'Business Name',
       sortable: true
     },
@@ -47,7 +65,7 @@ export default function VendorManagement() {
       sortable: true
     },
     {
-      key: 'businessType',
+      key: 'category',
       label: 'Category',
       render: (value: string) => (
         <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
@@ -58,38 +76,46 @@ export default function VendorManagement() {
     {
       key: 'verificationStatus',
       label: 'Verification',
-      render: (value: string) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-          value === 'verified' ? 'bg-green-100 text-green-800' :
-          value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+      render: (value: string | null | undefined) => {
+        const safeValue = value ?? "unknown";
+        return(
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+          safeValue === 'completed' ? 'bg-green-100 text-green-800' :
+          safeValue === 'pending' ? 'bg-yellow-100 text-yellow-800' :
           'bg-red-100 text-red-800'
         }`}>
-          {value === 'verified' ? (
+          {safeValue === 'completed' ? (
             <CheckCircle className="h-3 w-3 mr-1" />
-          ) : value === 'pending' ? (
+          ) : safeValue === 'pending' ? (
             <Clock className="h-3 w-3 mr-1" />
           ) : (
             <XCircle className="h-3 w-3 mr-1" />
           )}
-          {value.charAt(0).toUpperCase() + value.slice(1)}
+          {safeValue.charAt(0).toUpperCase() + safeValue.slice(1)}
         </span>
-      )
+        )
+        
+      }
     },
     {
       key: 'onboardingStatus',
       label: 'Onboarding',
-      render: (value: string) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-          value === 'completed' ? 'bg-green-100 text-green-800' :
-          value === 'pending_review' ? 'bg-yellow-100 text-yellow-800' :
+      render: (value: string | null | undefined) => {
+        const safeValue = value ?? "not_assigned";
+        return(
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+          safeValue === 'completed' ? 'bg-green-100 text-green-800' :
+          safeValue === 'pending_review' ? 'bg-yellow-100 text-yellow-800' :
           'bg-gray-100 text-gray-800'
         }`}>
-          {value.replace('_', ' ').charAt(0).toUpperCase() + value.replace('_', ' ').slice(1)}
+          {safeValue.replace('_', ' ')}
         </span>
-      )
+        )
+        
+      }
     },
     {
-      key: 'totalProducts',
+      key: 'products',
       label: 'Products',
       sortable: true
     },
@@ -175,19 +201,22 @@ export default function VendorManagement() {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Completed</span>
               <span className="text-sm font-medium text-emerald-600">
-                {mockVendors.filter(v => v.onboardingStatus === 'completed').length}
+                {/* {mockVendors.filter(v => v.onboardingStatus === 'completed').length} */}
+                {onboardingStatus.completed}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Under Review</span>
               <span className="text-sm font-medium text-yellow-600">
-                {mockVendors.filter(v => v.onboardingStatus === 'pending_review').length}
+                {/* {mockVendors.filter(v => v.onboardingStatus === 'pending_review').length} */}
+                {onboardingStatus.pending}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Incomplete</span>
               <span className="text-sm font-medium text-red-600">
-                {mockVendors.filter(v => v.onboardingStatus === 'incomplete').length}
+                {/* {mockVendors.filter(v => v.onboardingStatus === 'incomplete').length} */}
+                {onboardingStatus.incomplete}
               </span>
             </div>
           </div>
@@ -220,7 +249,8 @@ export default function VendorManagement() {
 
       {/* Vendors Table */}
       <DataTable
-        data={mockVendors}
+        // data={mockVendors}
+        data={Array.isArray(allVendors)? allVendors : []}
         columns={vendorColumns}
         onRowClick={(vendor) => setSelectedVendor(vendor)}
       />

@@ -9,7 +9,7 @@ export const getTotalUsers = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
     res.json({ totalUsers: count });
-}
+};
 
 export const getNewUsersToday = async (req, res) => {
     const Today = new Date();
@@ -24,7 +24,7 @@ export const getNewUsersToday = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
     res.json({ newUsersToday: count });
-}
+};
 
 export const getUsersGrowth = async (req, res) => {
 
@@ -77,7 +77,6 @@ export const getUsersGrowth = async (req, res) => {
     
 };
 
-
 export const getUserEngagement = async (req, res) => {
     try{
         const { count: totalUsers, error: totalUsersError } = await supabase
@@ -124,7 +123,7 @@ export const getUserEngagement = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 
-}
+};
 
 export const getAllUsers = async (req,res) =>{
     try{
@@ -173,4 +172,23 @@ export const getAllUsers = async (req,res) =>{
     catch(err){
         return res.status(500).json({ error: err.message });
     }
-}
+};
+
+export const conversionRate = async (req, res) => {
+    try {
+        const { count: totalUsers, error: totalUsersError } = await supabase
+            .from('Users')
+            .select('*', { count: 'exact', head: true });
+        if (totalUsersError) throw totalUsersError;
+        const { count: usersWithPurchases, error: purchaseError } = await supabase
+            .from('orders')
+            .select('user_id', { count: 'exact', head: true })
+            .neq('status', 'cancelled');
+        if (purchaseError) throw purchaseError;
+
+        const conversionRate = totalUsers > 0 ? ((usersWithPurchases / totalUsers) * 100).toFixed(2) : 0;
+        res.json({ conversionRate: conversionRate + "%" });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
