@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { Package, Clock, CheckCircle, XCircle, AlertTriangle, Calendar, DollarSign, User } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, AlertTriangle, Calendar, DollarSign, User, X } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
 import { mockOrders, mockAnalytics } from '../../data/mockData';
 import { Order } from '../../types';
+import { createPortal } from 'react-dom';
 
 export default function OrderManagement() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const { orders } = mockAnalytics;
 
-  const filteredOrders = filterStatus === 'all' 
-    ? mockOrders 
+  const filteredOrders = filterStatus === 'all'
+    ? mockOrders
     : mockOrders.filter(order => order.status === filterStatus);
 
   const orderColumns = [
@@ -46,10 +47,10 @@ export default function OrderManagement() {
           cancelled: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle },
           disputed: { bg: 'bg-red-100', text: 'text-red-800', icon: AlertTriangle }
         };
-        
+
         const config = statusConfig[value as keyof typeof statusConfig];
         const Icon = config.icon;
-        
+
         return (
           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${config.bg} ${config.text}`}>
             <Icon className="h-3 w-3 mr-1" />
@@ -181,7 +182,7 @@ export default function OrderManagement() {
             </select>
           </div>
         </div>
-        
+
         <DataTable
           data={filteredOrders}
           columns={orderColumns}
@@ -190,7 +191,7 @@ export default function OrderManagement() {
       </div>
 
       {/* Order Detail Modal */}
-      {selectedOrder && (
+      {selectedOrder && createPortal((
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
@@ -205,11 +206,11 @@ export default function OrderManagement() {
                   onClick={() => setSelectedOrder(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  ×
+                  <X />
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Order Status */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -222,12 +223,11 @@ export default function OrderManagement() {
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-gray-900">${selectedOrder.totalAmount}</p>
-                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                    selectedOrder.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${selectedOrder.status === 'active' ? 'bg-blue-100 text-blue-800' :
                     selectedOrder.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    selectedOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
+                      selectedOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                    }`}>
                     {selectedOrder.status.charAt(0).toUpperCase() + selectedOrder.status.slice(1)}
                   </span>
                 </div>
@@ -263,11 +263,10 @@ export default function OrderManagement() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Payment Status</span>
-                      <span className={`text-sm font-medium ${
-                        selectedOrder.paymentStatus === 'paid' ? 'text-green-600' :
+                      <span className={`text-sm font-medium ${selectedOrder.paymentStatus === 'paid' ? 'text-green-600' :
                         selectedOrder.paymentStatus === 'pending' ? 'text-yellow-600' :
-                        'text-red-600'
-                      }`}>
+                          'text-red-600'
+                        }`}>
                         {selectedOrder.paymentStatus.charAt(0).toUpperCase() + selectedOrder.paymentStatus.slice(1)}
                       </span>
                     </div>
@@ -336,7 +335,7 @@ export default function OrderManagement() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }
