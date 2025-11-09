@@ -33,11 +33,12 @@ const navigation = [
 ];
 
 export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false); // For mobile drawer
+  const [isExpanded, setIsExpanded] = useState(false); // For desktop hover
 
   return (
     <>
-      {/* Mobile Top Header */}
+      {/* === Mobile Header === */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-white border-b border-gray-200 flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -53,7 +54,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         </button>
       </div>
 
-      {/* Background Overlay (only visible when open on mobile) */}
+      {/* === Mobile Overlay === */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-[50] md:hidden transition-opacity duration-300"
@@ -61,25 +62,36 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         />
       )}
 
-      {/* Sidebar Drawer */}
+      {/* === Sidebar === */}
       <aside
-        className={`fixed md:static z-[70] top-0 left-0 h-full bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out 
-        w-64 md:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } md:shadow-none shadow-lg`}
+        className={`
+          fixed md:static z-[70] top-0 left-0 h-full bg-white border-r border-gray-200 
+          transform transition-all duration-300 ease-in-out
+          md:hover:w-64 ${isExpanded ? "w-64" : "w-16"} md:w-16
+          ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
+          shadow-lg md:shadow-none
+        `}
+        onMouseEnter={() => setIsExpanded(true)}
+        onMouseLeave={() => setIsExpanded(false)}
       >
-        {/* Logo Section (hidden on mobile top header) */}
-        <div className="p-6 hidden md:flex items-center space-x-3">
+        {/* === Logo Section === */}
+        <div className="p-6 flex items-center space-x-3">
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
             <LayoutDashboard className="h-6 w-6 text-white" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">RentAdmin</h1>
-            <p className="text-sm text-gray-500">Admin Dashboard</p>
+          <div
+            className={`transition-all duration-300 ease-out overflow-hidden ${
+              isExpanded ? "max-w-xs opacity-100" : "max-w-0 opacity-0"
+            } hidden md:block`}
+          >
+            <h1 className="text-lg font-bold whitespace-nowrap">RentAdmin</h1>
+            <p className="text-xs text-gray-600 whitespace-nowrap">
+              Admin Dashboard
+            </p>
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* === Navigation === */}
         <nav className="px-4 pb-20 md:pb-4 pt-16 md:pt-0 overflow-y-auto h-full">
           <ul className="space-y-1">
             {navigation.map((item) => {
@@ -100,11 +112,17 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
                     }`}
                   >
                     <Icon
-                      className={`mr-3 h-5 w-5 ${
+                      className={`h-5 w-5 flex-shrink-0 ${
                         isActive ? "text-blue-700" : "text-gray-400"
                       }`}
                     />
-                    {item.name}
+                    <span
+                      className={`ml-3 transition-all duration-300 ease-out overflow-hidden ${
+                        isExpanded ? "max-w-xs opacity-100" : "max-w-0 opacity-0"
+                      } hidden md:inline`}
+                    >
+                      {item.name}
+                    </span>
                   </button>
                 </li>
               );

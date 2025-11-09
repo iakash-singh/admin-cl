@@ -14,6 +14,7 @@ import Analytics from "./components/analytics/Analytics";
 import LocationInsights from "./components/locations/LocationInsights";
 import AdminFeatures from "./components/admin/AdminFeatures";
 import Login from "./pages/Login";
+import type { Session } from '@supabase/supabase-js';
 
 function Dashboard() {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -78,7 +79,7 @@ function Dashboard() {
 }
 
 function App() {
-  const [session, setSession] = useState<any>(null);
+const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {

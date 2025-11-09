@@ -34,8 +34,7 @@ export default function FeedbackManagement() {
   const averageRating =
     totalFeedback === 0
       ? 0
-      : mockFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) /
-        totalFeedback;
+      : mockFeedback.reduce((sum, feedback) => sum + feedback.rating, 0) / totalFeedback;
   const pendingReviews = mockFeedback.filter((f) => f.status === 'pending').length;
   const flaggedReviews = mockFeedback.filter((f) => f.status === 'flagged').length;
 
@@ -51,9 +50,7 @@ export default function FeedbackManagement() {
       })
       .sort((a, b) => {
         if (sortBy === 'recent')
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         if (sortBy === 'rating-high') return b.rating - a.rating;
         if (sortBy === 'rating-low') return a.rating - b.rating;
         if (sortBy === 'helpful') return b.helpful - a.helpful;
@@ -101,14 +98,7 @@ export default function FeedbackManagement() {
       label: 'Rating',
       render: (value: number) => (
         <div className="flex items-center">
-          {[...Array(5)].map((_, i) => (
-            <Star
-              key={i}
-              className={`h-4 w-4 ${
-                i < value ? 'text-yellow-400 fill-current' : 'text-gray-300'
-              }`}
-            />
-          ))}
+          <Star className="h-4 w-4 text-yellow-400 fill-current" />
           <span className="ml-2 text-sm font-medium">{value}</span>
         </div>
       ),
@@ -290,9 +280,7 @@ export default function FeedbackManagement() {
             className="bg-white rounded-xl shadow-xl max-w-2xl w-full overflow-y-auto max-h-[90vh]"
           >
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">
-                Review Details
-              </h3>
+              <h3 className="text-xl font-semibold text-gray-900">Review Details</h3>
               <button
                 onClick={() => setSelectedFeedback(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -302,7 +290,6 @@ export default function FeedbackManagement() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Header */}
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <MessageSquare className="h-6 w-6 text-blue-600" />
@@ -321,7 +308,6 @@ export default function FeedbackManagement() {
                 </div>
               </div>
 
-              {/* Rating */}
               <div className="flex items-center space-x-2">
                 {[...Array(5)].map((_, i) => (
                   <Star
@@ -335,12 +321,10 @@ export default function FeedbackManagement() {
                 ))}
               </div>
 
-              {/* Comment */}
               <div className="bg-gray-50 p-4 rounded-lg text-gray-800 leading-relaxed">
                 {selectedFeedback.comment}
               </div>
 
-              {/* Helpful */}
               <div className="flex items-center justify-between bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <ThumbsUp className="h-5 w-5 text-blue-600" />
@@ -353,7 +337,6 @@ export default function FeedbackManagement() {
                 </span>
               </div>
 
-              {/* Buttons */}
               <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
                 {selectedFeedback.status === 'pending' && (
                   <>

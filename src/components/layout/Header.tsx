@@ -1,5 +1,5 @@
 import React from "react";
-import { Bell, User, ChevronDown, Menu, LogOut } from "lucide-react";
+import { Bell, User, ChevronDown, Menu, LogOut, Search } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 
 interface HeaderProps {
@@ -31,6 +31,18 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           </button>
         </div>
 
+        {/* Center Search (hidden on mobile) */}
+        <div className="hidden md:flex items-center space-x-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search anything..."
+              className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+          </div>
+        </div>
+
         {/* Right Section */}
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Notification Button */}
@@ -51,7 +63,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
               <p className="text-sm font-medium text-gray-900 leading-tight">
                 Admin User
               </p>
-              <p className="text-xs text-gray-500 -mt-0.5">Super Administrator</p>
+              <p className="text-xs text-gray-500 -mt-0.5">
+                Super Administrator
+              </p>
             </div>
             <ChevronDown className="h-4 w-4 text-gray-400" />
           </div>
@@ -64,7 +78,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
             title="Logout"
           >
             <LogOut className="h-5 w-5" />
-            <span className="hidden sm:inline text-sm font-medium">Logout</span>
+            <span className="hidden sm:inline text-sm font-medium">
+              Logout
+            </span>
           </button>
         </div>
       </div>
