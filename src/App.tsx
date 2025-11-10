@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { supabase } from "./supabaseClient";
+import type { Session } from "@supabase/supabase-js";
 
 // Layout + Dashboard sections
 import Sidebar from "./components/layout/Sidebar";
@@ -14,7 +16,6 @@ import Analytics from "./components/analytics/Analytics";
 import LocationInsights from "./components/locations/LocationInsights";
 import AdminFeatures from "./components/admin/AdminFeatures";
 import Login from "./pages/Login";
-import type { Session } from '@supabase/supabase-js';
 
 function Dashboard() {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -39,7 +40,7 @@ function Dashboard() {
         return <AdminFeatures />;
       case "reports":
         return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Reports & Documentation
             </h3>
@@ -50,7 +51,7 @@ function Dashboard() {
         );
       case "settings":
         return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               System Settings
             </h3>
@@ -66,30 +67,37 @@ function Dashboard() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-      />
+      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
       <div className="flex-1">
         <Header activeSection={activeSection} />
-        <main className="p-6">{renderContent()}</main>
+        <motion.div
+          key={activeSection}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="p-0"
+        >
+          {renderContent()}
+        </motion.div>
       </div>
     </div>
   );
 }
 
 function App() {
-const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load active session if already logged in
-    supabase.auth.getSession().then(({ data }) => {
+    const loadSession = async () => {
+      const { data } = await supabase.auth.getSession();
       setSession(data.session);
+      setLoading(false);
       if (!data.session) navigate("/login");
-    });
+    };
+    loadSession();
 
-    // Listen for login/logout changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -100,6 +108,14 @@ const [session, setSession] = useState<Session | null>(null);
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <Routes>

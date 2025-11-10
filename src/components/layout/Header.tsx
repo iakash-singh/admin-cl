@@ -1,6 +1,7 @@
 import React from "react";
 import { Bell, User, ChevronDown, Menu, LogOut, Search } from "lucide-react";
 import { supabase } from "../../supabaseClient";
+import { motion } from "framer-motion";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -19,70 +20,89 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sticky top-0 z-40 backdrop-blur-md bg-opacity-90">
+    <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200 px-10 py-4 sticky top-0 z-40 shadow-sm transition-all duration-300">
       <div className="flex items-center justify-between">
-        {/* Left Section */}
-        <div className="flex items-center space-x-3">
-          <button
+        {/* Left Section (Logo / Menu Button) */}
+        <div className="flex items-center gap-4">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={onMenuToggle}
-            className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+            className="hidden xl:flex p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition"
+            aria-label="Toggle Menu"
           >
-            <Menu className="h-5 w-5" />
-          </button>
+            <Menu className="h-6 w-6" />
+          </motion.button>
+
+          <motion.h1
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+            className="text-xl font-semibold tracking-tight text-gray-800 select-none"
+          >
+            RentAdmin Panel
+          </motion.h1>
         </div>
 
-        {/* Center Search (hidden on mobile) */}
-        <div className="hidden md:flex items-center space-x-4">
+        {/* Center Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="flex items-center"
+        >
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search anything..."
-              className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="pl-10 pr-4 py-2 w-[22rem] border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm outline-none transition-all"
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Section */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex items-center gap-5"
+        >
           {/* Notification Button */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
             className="relative p-2 text-gray-500 hover:text-gray-700 transition"
             aria-label="Notifications"
           >
-            <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
+            <Bell className="h-6 w-6" />
             <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
-          </button>
+          </motion.button>
 
           {/* User Profile */}
-          <div className="flex items-center space-x-2 sm:space-x-3 cursor-pointer">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-600 to-indigo-500 rounded-full flex items-center justify-center shadow-sm">
-              <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 px-3 py-1.5 rounded-xl transition-all">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-500 rounded-full flex items-center justify-center shadow-md">
+              <User className="h-5 w-5 text-white" />
             </div>
-            <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-gray-900 leading-tight">
-                Admin User
-              </p>
-              <p className="text-xs text-gray-500 -mt-0.5">
-                Super Administrator
-              </p>
+            <div className="text-right">
+              <p className="text-sm font-semibold text-gray-900">Admin User</p>
+              <p className="text-xs text-gray-500 -mt-0.5">Super Administrator</p>
             </div>
             <ChevronDown className="h-4 w-4 text-gray-400" />
           </div>
 
           {/* Logout Button */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleLogout}
-            className="flex items-center space-x-1 text-gray-600 hover:text-red-600 transition ml-3"
+            className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition"
             aria-label="Logout"
             title="Logout"
           >
             <LogOut className="h-5 w-5" />
-            <span className="hidden sm:inline text-sm font-medium">
-              Logout
-            </span>
-          </button>
-        </div>
+            <span className="text-sm font-medium">Logout</span>
+          </motion.button>
+        </motion.div>
       </div>
     </header>
   );

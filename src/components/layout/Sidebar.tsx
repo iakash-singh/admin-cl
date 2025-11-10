@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   LayoutDashboard,
   Users,
@@ -10,9 +10,9 @@ import {
   Shield,
   FileText,
   MapPin,
-  Menu,
-  X,
+  LogOut,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface SidebarProps {
   activeSection: string;
@@ -33,103 +33,72 @@ const navigation = [
 ];
 
 export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
-  const [isOpen, setIsOpen] = useState(false); // For mobile drawer
-  const [isExpanded, setIsExpanded] = useState(false); // For desktop hover
-
   return (
-    <>
-      {/* === Mobile Header === */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-white border-b border-gray-200 flex items-center justify-between px-4 py-3">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <LayoutDashboard className="h-5 w-5 text-white" />
-          </div>
-          <h1 className="text-lg font-semibold text-gray-800">RentAdmin</h1>
-        </div>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2 rounded-md text-gray-600 hover:bg-gray-100 focus:outline-none"
-        >
-          {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-      </div>
-
-      {/* === Mobile Overlay === */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-[50] md:hidden transition-opacity duration-300"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* === Sidebar === */}
-      <aside
-        className={`
-          fixed md:static z-[70] top-0 left-0 h-full bg-white border-r border-gray-200 
-          transform transition-all duration-300 ease-in-out
-          md:hover:w-64 ${isExpanded ? "w-64" : "w-16"} md:w-16
-          ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0
-          shadow-lg md:shadow-none
-        `}
-        onMouseEnter={() => setIsExpanded(true)}
-        onMouseLeave={() => setIsExpanded(false)}
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 shadow-sm flex flex-col z-50">
+      {/* === Logo & Brand Section === */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex items-center gap-3 px-6 py-5 border-b border-gray-100"
       >
-        {/* === Logo Section === */}
-        <div className="p-6 flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <LayoutDashboard className="h-6 w-6 text-white" />
-          </div>
-          <div
-            className={`transition-all duration-300 ease-out overflow-hidden ${
-              isExpanded ? "max-w-xs opacity-100" : "max-w-0 opacity-0"
-            } hidden md:block`}
-          >
-            <h1 className="text-lg font-bold whitespace-nowrap">RentAdmin</h1>
-            <p className="text-xs text-gray-600 whitespace-nowrap">
-              Admin Dashboard
-            </p>
-          </div>
+        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+          <LayoutDashboard className="h-6 w-6 text-white" />
         </div>
+        <div>
+          <h1 className="text-lg font-bold text-gray-800 leading-tight">RentAdmin</h1>
+          <p className="text-xs text-gray-500 -mt-0.5">Admin Dashboard</p>
+        </div>
+      </motion.div>
 
-        {/* === Navigation === */}
-        <nav className="px-4 pb-20 md:pb-4 pt-16 md:pt-0 overflow-y-auto h-full">
-          <ul className="space-y-1">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeSection === item.id;
+      {/* === Navigation Section === */}
+      <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
+        <ul className="space-y-1">
+          {navigation.map((item, index) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.id;
 
-              return (
-                <li key={item.id}>
-                  <button
-                    onClick={() => {
-                      onSectionChange(item.id);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-150 ${
+            return (
+              <motion.li
+                key={item.id}
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.05 * index, duration: 0.3 }}
+              >
+                <button
+                  onClick={() => onSectionChange(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out
+                    ${
                       isActive
-                        ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-md"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     }`}
-                  >
-                    <Icon
-                      className={`h-5 w-5 flex-shrink-0 ${
-                        isActive ? "text-blue-700" : "text-gray-400"
-                      }`}
-                    />
-                    <span
-                      className={`ml-3 transition-all duration-300 ease-out overflow-hidden ${
-                        isExpanded ? "max-w-xs opacity-100" : "max-w-0 opacity-0"
-                      } hidden md:inline`}
-                    >
-                      {item.name}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      </aside>
-    </>
+                >
+                  <Icon
+                    className={`h-5 w-5 flex-shrink-0 ${
+                      isActive ? "text-white" : "text-gray-500"
+                    }`}
+                  />
+                  <span className="whitespace-nowrap">{item.name}</span>
+                </button>
+              </motion.li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* === Bottom Logout Section === */}
+      <div className="border-t border-gray-200 px-6 py-4">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => window.location.href = "/login"}
+          className="flex items-center gap-2 w-full text-gray-600 hover:text-red-600 transition text-sm font-medium"
+        >
+          <LogOut className="h-5 w-5" />
+          Logout
+        </motion.button>
+      </div>
+    </aside>
   );
 }
