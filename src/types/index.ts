@@ -49,22 +49,18 @@ export interface Product {
   lastRented: string;
 }
 
+// CORRECTED VERSION OF THE 'Order' INTERFACE
 export interface Order {
-  id: string;
-  userId: string;
-  userName: string;
-  vendorId: string;
-  vendorName: string;
-  productId: string;
-  productName: string;
+  // Columns from the 'orders' table (using snake_case)
+  id: number;
+  created_at: string;
+  user_id: string;
+  vendor_id: string;
   status: 'active' | 'pending' | 'completed' | 'cancelled' | 'disputed';
-  startDate: string;
-  endDate: string;
-  totalAmount: number;
-  paymentStatus: 'paid' | 'pending' | 'refunded';
-  createdAt: string;
-  location: string;
+  total_amount: number;
+  // Add any other columns from your 'orders' table here as needed
 }
+
 
 export interface Feedback {
   id: string;
