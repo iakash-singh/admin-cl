@@ -1,63 +1,48 @@
-import React, { useEffect, useState } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { supabase } from "./supabaseClient";
-import type { Session } from "@supabase/supabase-js";
+import React, { useState } from 'react';
+import Sidebar from './components/layout/Sidebar';
+import Header from './components/layout/Header';
+import Overview from './components/dashboard/Overview';
+import UserManagement from './components/users/UserManagement';
+import VendorManagement from './components/vendors/VendorManagement';
+import OrderManagement from './components/orders/OrderManagement';
+import FeedbackManagement from './components/feedback/FeedbackManagement';
+import Analytics from './components/analytics/Analytics';
+import LocationInsights from './components/locations/LocationInsights';
+import AdminFeatures from './components/admin/AdminFeatures';
 
-// Layout + Dashboard sections
-import Sidebar from "./components/layout/Sidebar";
-import Header from "./components/layout/Header";
-import Overview from "./components/dashboard/Overview";
-import UserManagement from "./components/users/UserManagement";
-import VendorManagement from "./components/vendors/VendorManagement";
-import OrderManagement from "./components/orders/OrderManagement";
-import FeedbackManagement from "./components/feedback/FeedbackManagement";
-import Analytics from "./components/analytics/Analytics";
-import LocationInsights from "./components/locations/LocationInsights";
-import AdminFeatures from "./components/admin/AdminFeatures";
-import Login from "./pages/Login";
-
-function Dashboard() {
-  const [activeSection, setActiveSection] = useState("dashboard");
+function App() {
+  const [activeSection, setActiveSection] = useState('dashboard');
 
   const renderContent = () => {
     switch (activeSection) {
-      case "dashboard":
+      case 'dashboard':
         return <Overview />;
-      case "users":
+      case 'users':
         return <UserManagement />;
-      case "vendors":
+      case 'vendors':
         return <VendorManagement />;
-      case "orders":
+      case 'orders':
         return <OrderManagement />;
-      case "feedback":
+      case 'feedback':
         return <FeedbackManagement />;
-      case "analytics":
+      case 'analytics':
         return <Analytics />;
-      case "locations":
+      case 'locations':
         return <LocationInsights />;
-      case "admin":
+      case 'admin':
         return <AdminFeatures />;
-      case "reports":
+      case 'reports':
         return (
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Reports & Documentation
-            </h3>
-            <p className="text-gray-600">
-              Comprehensive reporting system coming soon...
-            </p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Reports & Documentation</h3>
+            <p className="text-gray-600">Comprehensive reporting system coming soon...</p>
           </div>
         );
-      case "settings":
+      case 'settings':
         return (
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              System Settings
-            </h3>
-            <p className="text-gray-600">
-              Advanced configuration options coming soon...
-            </p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">System Settings</h3>
+            <p className="text-gray-600">Advanced configuration options coming soon...</p>
           </div>
         );
       default:
@@ -70,64 +55,11 @@ function Dashboard() {
       <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
       <div className="flex-1">
         <Header activeSection={activeSection} />
-        <motion.div
-          key={activeSection}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="p-0"
-        >
+        <main className="p-6 max-w-6xl mx-auto">
           {renderContent()}
-        </motion.div>
+        </main>
       </div>
     </div>
-  );
-}
-
-function App() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const loadSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setLoading(false);
-      if (!data.session) navigate("/login");
-    };
-    loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) navigate("/");
-      else navigate("/login");
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  return (
-    <Routes>
-      <Route
-        path="/login"
-        element={session ? <Navigate to="/" /> : <Login />}
-      />
-      <Route
-        path="/"
-        element={session ? <Dashboard /> : <Navigate to="/login" />}
-      />
-    </Routes>
   );
 }
 
