@@ -113,3 +113,15 @@ export const getOrderSuccessRate = async (req, res) => {
     const successRate = (successful / total) * 100 || 0;
     res.json({ orderSuccessRate: successRate });
 }
+
+export const marketcoverage = async (req, res) => {
+    const { data, error } = await supabase
+    .from('users_info')
+    .select('location');
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+    const locations = [...new Set(data.map(order => order.location))];
+    res.json({ marketCoverage: locations.length });
+}
+

@@ -56,6 +56,17 @@ export default function UserManagement() {
     fetchUsers();
   }, []);
 
+  const handleRowClick = async (user:any) => {
+    try{
+      const res = await fetch(`http://localhost:3000/api/users/${user.id}`);
+      const data = await res.json();
+      setSelectedUser(data);
+    }
+    catch(err){
+      console.error('Error fetching user details:', err);
+    }
+  }
+
   const userColumns = [
     {
       key: 'avatar',
@@ -203,10 +214,10 @@ export default function UserManagement() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Signups</h3>
           <div className="space-y-3">
-            {/* {allUsers.slice(0, 3).map((user) => (
+            {allUsers.slice(0, 3).map((user) => (
               <div key={user.id} className="flex items-center space-x-3">
                 {user.avatar ? (
                   <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
@@ -220,16 +231,16 @@ export default function UserManagement() {
                   <p className="text-xs text-gray-500">{new Date(user.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
-            ))} */}
+            ))}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Users Table */}
       <DataTable
         data={Array.isArray(allUsers)? allUsers : []}
         columns={userColumns}
-        onRowClick={(user) => setSelectedUser(user)}
+        onRowClick={handleRowClick}
       />
 
       {/* User Detail Modal */}

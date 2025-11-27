@@ -100,12 +100,7 @@ export default function Overview() {
           icon={TrendingUp}
           color="green"
         /> */}
-        <StatCard
-          title="Pending Approvals"
-          value={vendors.pendingApproval}
-          icon={Star}
-          color="yellow"
-        />
+        
       </div>
 
       {/* Quick Stats Grid */}

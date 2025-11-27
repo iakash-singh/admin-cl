@@ -107,6 +107,7 @@ export const getAllVendors = async (req,res) =>{
         if(error) throw error;
         
         const formattedData = data.map(v =>({
+            id: v.vendors_id,
             buisnessName: v.business_name || '',
             ownerName: v.owner || '',
             category: v.category || '',
@@ -121,5 +122,79 @@ export const getAllVendors = async (req,res) =>{
     }
     catch(err){
         return res.status(500).json({ error: err.message });
+    }
+}
+
+export const topvendorLocations = async (req, res) => {
+    try {
+        const { data, error } = await supabaseClient
+            .from('vendorsData')
+            .select('location, revenue')
+            .neq('location', null);
+        if (error) throw error;
+
+        const locationMap = {};
+        data.forEach(vendor => {
+            const location = vendor.location;
+            if (location) {
+                if (!locationMap[location]) {
+                    locationMap[location] = { vendorCount: 0, totalRevenue: 0 };
+                }
+                locationMap[location].vendorCount += 1;
+                locationMap[location].totalRevenue += vendor.revenue || 0;
+            }
+        });
+        const formattedData = Object.entries(locationMap).map(([location, info]) => {
+            return {
+                location,
+                vendorCount: info.vendorCount,
+                totalRevenue: info.totalRevenue
+            };
+        });
+        formattedData.sort((a, b) => b.vendorCount - a.vendorCount);
+        res.json({ topLocations: formattedData});
+    } catch (error) {
+        console.error('Error fetching top vendor locations:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }   
+}
+
+export const getVendorById = async (req, res) => {
+    let { id } = req.params;
+
+    id = String(id).replace(':','').trim(); // Sanitize input
+    const numericID = Number(id);
+
+    if(isNaN(numericID)){
+        console.error("Invalid user ID:", id);
+        return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from("vendorsData")
+            .select('vendors_id, business_name, owner, category, verification, onboarding, products, rating, revenue, location, created_at')
+            .eq('vendors_id', numericID)
+            .single();
+        if (error) throw error;
+        if (!data) {
+            return res.status(404).json({ error: "Vendor not found" });
+        }
+        const vendorData = {
+            id: data.vendors_id,
+            businessName: data.business_name,
+            ownerName: data.owner,
+            category: data.category,
+            verificationStatus: data.verification,
+            onboardingStatus: data.onboarding,
+            totalProducts: data.products,
+            rating: data.rating,
+            revenue: data.revenue,
+            location: data.location,
+        };
+        res.json(vendorData);
+    } catch (error) {
+        console.error('Error fetching vendor by ID:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 }

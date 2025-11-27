@@ -5,6 +5,8 @@ import cors from 'cors';
 import vendorRoutes from './routes/vendors.js';
 import orderRoutes from './routes/orders.js';
 import userRoutes from './routes/users.js';
+import locationRoutes from "./routes/location.js";
+
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,6 +17,7 @@ app.use(cors());
 app.use('/api/users/', userRoutes);
 app.use('/api/vendors/', vendorRoutes);
 app.use('/api/orders/', orderRoutes);
+app.use("/api/locations", locationRoutes);
 
 app.get('/',(req,res)=>{
     res.send('Admin Backend is running');

@@ -53,10 +53,25 @@ export default function VendorManagement() {
       fetchAllVendors();
   }, []);
 
+  const handleRowClick = async (vendor: any) => {
+    try{
+      const res = await fetch(`http://localhost:3000/api/vendors/:${vendor.id}`);
+      const data = await res.json();
+      setSelectedVendor(data);
+    }
+    catch(err){
+      console.error('Error fetching vendor details:', err);
+    }
+  };
   const vendorColumns = [
     {
       key: 'buisnessName',
       label: 'Business Name',
+      sortable: true
+    },
+    {
+      key: 'id',
+      label: 'ID',
       sortable: true
     },
     {
@@ -252,7 +267,7 @@ export default function VendorManagement() {
         // data={mockVendors}
         data={Array.isArray(allVendors)? allVendors : []}
         columns={vendorColumns}
-        onRowClick={(vendor) => setSelectedVendor(vendor)}
+        onRowClick={handleRowClick}
       />
 
       {/* Vendor Detail Modal */}

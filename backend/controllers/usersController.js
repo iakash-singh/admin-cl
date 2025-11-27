@@ -192,3 +192,256 @@ export const conversionRate = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 };
+
+export const getUserLocationsInsights = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users_info')
+            .select('location');
+        if (error) throw error;
+        const locationCounts = {};
+        data.forEach(user => {
+            const location = user.location || 'Unknown';
+            locationCounts[location] = (locationCounts[location] || 0) + 1;
+        });
+        res.json(locationCounts);
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export const topUserLocations = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users_info')
+            .select('location, total_spend');
+        if (error) throw error;
+        const locationCounts = {};  
+        data.forEach(user => {
+            const location = user.location || 'Unknown';
+            const revenue = user.total_spend || 0;
+            
+            if(!locationCounts[location]){
+                locationCounts[location] = {userCount: 0, totalRevenue: 0};
+            }
+            locationCounts[location].userCount += 1;
+            locationCounts[location].totalRevenue += revenue;
+
+        });
+        const sortedLocations = Object.entries(locationCounts)
+            .sort((a, b) => b[1].userCount - a[1].userCount)
+            .slice(0, 5)
+            .map(([city, stats]) => ({ city, userCount: stats.userCount, revenue: stats.totalRevenue }));
+        res.json({topLocations:sortedLocations});
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+export const topMarketbyUserSpend = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users_info')
+            .select('location, total_spend');
+        if (error) throw error;
+        const locationRevenue = {}; 
+        data.forEach(user => {
+            const location = user.location || 'Unknown';
+            const revenue = user.total_spend || 0;
+            locationRevenue[location] = (locationRevenue[location] || 0) + revenue
+        });
+        const sortedLocations = Object.entries(locationRevenue)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([city, revenue]) => ({ city, revenue }));
+        res.json({topMarkets:sortedLocations});
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+// export const userConcentrationByLocation = async (req, res) => {
+//     try {
+//         const { data, error } = await supabase
+//             .from('users_info')
+//             .select('location');
+//         if (error) throw error;
+//         const locationCounts = {};
+//         data.forEach(user => {
+//             const location = user.location || 'Unknown';
+//             locationCounts[location] = (locationCounts[location] || 0) + 1;
+//         });
+//         const formattedData = Object.entries(locationCounts).map(([location, count]) => ({
+//             location,
+//             userCount: count
+//         }));
+//         res.json({ userConcentration: formattedData });
+//     }
+//     catch (error) {
+//         return res.status(500).json({ error: error.message });
+//     }
+// };
+
+export const userandVendorConcentrationByLocation = async (req, res) => {
+    try {
+        const { data: userData, error: userError } = await supabase
+            .from('users_info')
+            .select('location');
+        if (userError) throw userError;
+        const { data: vendorData, error: vendorError } = await supabase
+            .from('vendorsData')
+            .select('location');
+        if (vendorError) throw vendorError;
+        const locationCounts = {};
+        userData.forEach(user => {
+            const location = user.location || 'Unknown';
+            if (!locationCounts[location]) {
+                locationCounts[location] = { userCount: 0, vendorCount: 0 };
+            }
+            locationCounts[location].userCount += 1;
+        });
+        vendorData.forEach(vendor => {
+            const location = vendor.location || 'Unknown';
+            if (!locationCounts[location]) {
+                locationCounts[location] = { userCount: 0, vendorCount: 0 };
+            }
+            locationCounts[location].vendorCount += 1;
+        });
+        const formattedData = Object.entries(locationCounts).map(([location, counts]) => ({
+            location,
+            userCount: counts.userCount,
+            vendorCount: counts.vendorCount
+        }));
+        res.json({ userandVendorConcentration: formattedData });
+    }
+    catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+export const marketOpportunity = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users_info')
+            .select('location, total_spend');
+        if (error) throw error;
+
+        const locationStats = {};
+        data.forEach(user => {
+            const location = user.location || 'Unknown';
+            const revenue = user.total_spend || 0;
+            if (!locationStats[location]) {
+                locationStats[location] = { userCount: 0, totalRevenue: 0 };
+            }
+            locationStats[location].userCount += 1;
+            locationStats[location].totalRevenue += revenue;
+        });        
+        const formattedData = Object.entries(locationStats).map(([location, stats]) => ({
+            location,
+            userCount: stats.userCount,
+            totalRevenue: stats.totalRevenue
+        }));
+        res.json({ marketOpportunity: formattedData });
+    }
+    catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}   
+
+export const marketPenetration = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users_info')
+            .select('location');
+        if (error) throw error;
+        const locationCounts = {};
+        data.forEach(user => {
+            const location = user.location || 'Unknown';
+            locationCounts[location] = (locationCounts[location] || 0) + 1;
+        });
+        const formattedData = Object.entries(locationCounts).map(([location, count]) => ({
+            location,
+            userCount: count
+        }));
+        res.json({ marketPenetration: formattedData });
+    }   
+    catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+export const revenueDistributionByLocation = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users_info')
+            .select('location, total_spend');
+        if (error) throw error;
+        const locationRevenue = {};
+        data.forEach(user => {
+            const location = user.location || 'Unknown';
+            const revenue = user.total_spend || 0;
+            locationRevenue[location] = (locationRevenue[location] || 0) + revenue;
+        });
+        const formattedData = Object.entries(locationRevenue).map(([location, revenue]) => ({
+            location,
+            totalRevenue: revenue
+        }));
+        res.json({ revenueDistribution: formattedData });
+    }
+    catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+export const getUserDetailsById = async (req, res) => {
+    let {id} = req.params;
+    
+    id = String(id).replace(':','').trim(); // Sanitize input
+    const numericID = Number(id);
+
+    if(isNaN(numericID)){
+        console.error("Invalid user ID:", id);
+        return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    try{
+        const {data, error} = await supabase
+        .from("Users")
+        .select(`
+            id,
+            name,
+            email,
+            role,
+            created_at,
+            status,
+            users_info (
+            avatar,
+            rentals,
+            total_spend,
+            location
+            )`)
+        .eq('id', numericID)
+        .single();
+        if(error) throw error;
+        if(!data) return res.status(404).json({ error: "User not found" });
+
+        const info = Array.isArray(data.users_info) ? data.users_info[0] || {} : data.users_info || {};
+
+        const userData = {
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            userType: data.role,
+            registrationDate: data.created_at,
+            status: data.status,
+            avatar: info.avatar || null,
+            totalRentals: info.rentals || 0,
+            totalSpent: info.total_spend || 0,
+            location: info.location || null,
+        };
+        res.json(userData);
+    }
+    catch(err){
+        return res.status(500).json({ error: err.message });
+    }   
+};

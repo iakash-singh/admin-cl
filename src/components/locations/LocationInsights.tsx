@@ -1,5 +1,27 @@
-import React, { useState } from 'react';
-import { MapPin, Users, Store, Package, DollarSign, TrendingUp, Search } from 'lucide-react';
+type TopMarketLocation = {
+  city: string;
+  revenue: number;
+};
+type userVendorConcentartion = {
+  location: string;
+  userCount: number;
+  vendorCount: number;
+};
+type marketOpportunity = {
+  location: string;
+  userCount: number;
+  totalRevenue: number;
+};
+type marketPenetration = {
+  location: string;
+  userCount: number;
+};
+type revenueDistribution = {
+  location: string;
+  totalRevenue: number;
+};
+import { useState, useEffect } from 'react';
+import { MapPin, Users, Store, Package, DollarSign, TrendingUp } from 'lucide-react';
 import StatCard from '../shared/StatCard';
 import DataTable from '../shared/DataTable';
 import { mockLocations } from '../../data/mockData';
@@ -7,12 +29,113 @@ import { Location } from '../../types';
 
 export default function LocationInsights() {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [total_Users, setTotal_Users] = useState(0);
+  const [total_Vendors, setTotal_Vendors] = useState(0);
+  const [Avg_Order_Value, setAvg_Order_Value] = useState(0);
+  const [market_Coverage, setMarket_Coverage] = useState(0);
+  const [top_Market_by_User_Spend, setTop_Market_by_User_Spend] = useState<TopMarketLocation[]>([]);
+  const [userVendor_Concentration_by_Location, setUserVendor_Concentration_by_Location] = useState<userVendorConcentartion[]>([]);
+  const [market_Opportunity, setMarket_Opportunity] = useState<marketOpportunity[]>([]);
+  const [market_Penetration, setMarket_Penetration] = useState<marketPenetration[]>([]);
+  const [revenue_Distribution, setRevenue_Distribution] = useState<revenueDistribution[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+
+  //statcards
+  const [totalusers, setTotalusers] = useState(0);
+  const [totalVendors, setTotalVendors] = useState(0);
+  const [avgOrderValue, setAvgOrderValue] = useState(0);
+  const [marketCoverage, setMarketCoverage] = useState(0);
+  
+  
+  useEffect(()=>{
+    try{
+    fetch("http://localhost:3000/api/users/total-users")
+    .then((response) => response.json())
+    .then((data) => setTotal_Users(data.totalUsers))
+    .catch(error => console.error('Error fetching user growth data:', error));
+
+    fetch("http://localhost:3000/api/vendors/total-vendors")
+    .then((response) => response.json())
+    .then((data) => setTotal_Vendors(data.totalVendors))
+    .catch(error => console.error('Error fetching user growth data:', error));
+
+    fetch("http://localhost:3000/api/orders/average-order-value")
+    .then((response) => response.json())
+    .then((data) => setAvg_Order_Value(data.averageOrderValue))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/orders/market-coverage")
+    .then((response) => response.json())
+    .then((data) => setMarket_Coverage(data.marketCoverage))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/top-market-by-user-spend")
+    .then((response) => response.json())
+    .then((data) => setTop_Market_by_User_Spend(data.topMarkets))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/user-and-vendor-concentration-by-location")
+    .then((response) => response.json())
+    .then((data) => setUserVendor_Concentration_by_Location(data.userandVendorConcentration))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/market-opportunity")
+    .then((response) => response.json())
+    .then((data) => setMarket_Opportunity(data.marketOpportunity))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/market-penetration")
+    .then((response) => response.json())
+    .then((data) => setMarket_Penetration(data.marketPenetration))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/revenue-distribution-by-location")
+    .then((response) => response.json())
+    .then((data) => setRevenue_Distribution(data.revenueDistribution))
+    .catch(error => console.error('Error fetching user growth data:', error));
+
+    const fetchall = async() =>{
+      const res = await fetch("http://localhost:3000/api/locations");
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data: data.locations ?? [];
+      setLocations(arr);
+
+      const totalUsersCount = data.reduce((sum: number, loc: any) => sum + loc.userCount, 0);
+      const totalVendorsCount = data.reduce((sum: number, loc: any) => sum + loc.vendorCount, 0);
+      const totalRevenue = data.reduce((sum: number, loc: any) => sum + loc.revenue, 0)
+      const totalOrders = data.reduce((sum: number, loc: any) => sum + loc.orderCount, 0);
+
+      setTotalusers(totalUsersCount);
+      setTotalVendors(totalVendorsCount);
+      setAvgOrderValue(totalOrders > 0 ? totalRevenue / totalOrders : 0);
+      setMarketCoverage(arr.length); // number of cities covered
+
+    }
+    
+    fetchall();
+    }
+    catch(err){
+      console.error("Error calculating totals:", err);
+    }
+    
+  }, [])
+
+  const handleRowClick = async (location: any) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/locations/${encodeURIComponent(location.city)}`);
+      const data = await res.json();
+      setSelectedLocation(data.location);
+    } catch (err) {
+      console.error("Error fetching location details:", err);
+    }
+  };
+
 
   // Calculate totals
-  const totalUsers = mockLocations.reduce((sum, loc) => sum + loc.userCount, 0);
-  const totalVendors = mockLocations.reduce((sum, loc) => sum + loc.vendorCount, 0);
-  const totalRevenue = mockLocations.reduce((sum, loc) => sum + loc.revenue, 0);
-  const averageOrderValue = mockLocations.reduce((sum, loc) => sum + (loc.revenue / loc.orderCount), 0) / mockLocations.length;
+  const totalUsers = locations.reduce((sum, loc) => sum + (loc.userCount??0), 0);
+  // const totalVendors = mockLocations.reduce((sum, loc) => sum + loc.vendorCount, 0);
+  const totalRevenue = locations.reduce((sum, loc) => sum + (loc.revenue??0), 0);
+  // const averageOrderValue = mockLocations.reduce((sum, loc) => sum + (loc.revenue / loc.orderCount), 0) / mockLocations.length;
 
   const locationColumns = [
     {
@@ -33,7 +156,7 @@ export default function LocationInsights() {
       render: (value: number) => (
         <div className="flex items-center">
           <Users className="h-4 w-4 text-blue-500 mr-1" />
-          {value.toLocaleString()}
+          {Number(value?? 0).toLocaleString()}
         </div>
       )
     },
@@ -44,7 +167,7 @@ export default function LocationInsights() {
       render: (value: number) => (
         <div className="flex items-center">
           <Store className="h-4 w-4 text-green-500 mr-1" />
-          {value}
+          {Number(value?? 0)}
         </div>
       )
     },
@@ -55,7 +178,7 @@ export default function LocationInsights() {
       render: (value: number) => (
         <div className="flex items-center">
           <Package className="h-4 w-4 text-purple-500 mr-1" />
-          {value.toLocaleString()}
+          {Number(value?? 0).toLocaleString()}
         </div>
       )
     },
@@ -66,7 +189,7 @@ export default function LocationInsights() {
       render: (value: number) => (
         <div className="flex items-center">
           <DollarSign className="h-4 w-4 text-green-600 mr-1" />
-          ${value.toLocaleString()}
+          ${Number(value?? 0).toLocaleString()}
         </div>
       )
     },
@@ -99,13 +222,13 @@ export default function LocationInsights() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Market Coverage"
-          value={mockLocations.length}
+          value={market_Coverage}
           icon={MapPin}
           color="blue"
         />
         <StatCard
           title="Total Active Users"
-          value={totalUsers.toLocaleString()}
+          value={total_Users.toLocaleString()}
           change={8.3}
           changeType="increase"
           icon={Users}
@@ -113,7 +236,7 @@ export default function LocationInsights() {
         />
         <StatCard
           title="Total Vendors"
-          value={totalVendors}
+          value={total_Vendors.toLocaleString()}
           change={12.1}
           changeType="increase"
           icon={Store}
@@ -121,7 +244,7 @@ export default function LocationInsights() {
         />
         <StatCard
           title="Average Order Value"
-          value={`$${averageOrderValue.toFixed(0)}`}
+          value={`$${Avg_Order_Value.toPrecision(4)}`}
           change={5.7}
           changeType="increase"
           icon={DollarSign}
@@ -134,7 +257,7 @@ export default function LocationInsights() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Markets by Revenue</h3>
           <div className="space-y-3">
-            {mockLocations
+            {top_Market_by_User_Spend
               .sort((a, b) => b.revenue - a.revenue)
               .slice(0, 5)
               .map((location, index) => (
@@ -144,12 +267,12 @@ export default function LocationInsights() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">{location.city}</p>
-                    <p className="text-xs text-gray-500">{location.orderCount} orders</p>
+                    {/* <p className="text-xs text-gray-500">{location.orderCount} orders</p> */}
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900">${location.revenue.toLocaleString()}</p>
                     <p className="text-xs text-gray-500">
-                      ${(location.revenue / location.orderCount).toFixed(0)} avg
+                      {/* ${(location.revenue / location.orderCount).toFixed(0)} avg */}
                     </p>
                   </div>
                 </div>
@@ -160,16 +283,16 @@ export default function LocationInsights() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">User Concentration</h3>
           <div className="space-y-3">
-            {mockLocations
+            {userVendor_Concentration_by_Location
               .sort((a, b) => b.userCount - a.userCount)
               .slice(0, 5)
               .map((location, index) => (
-                <div key={location.city} className="flex items-center space-x-3">
+                <div key={location.location} className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-bold text-blue-600">#{index + 1}</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{location.city}</p>
+                    <p className="text-sm font-medium text-gray-900">{location.location}</p>
                     <p className="text-xs text-gray-500">{location.vendorCount} vendors</p>
                   </div>
                   <div className="text-right">
@@ -186,20 +309,20 @@ export default function LocationInsights() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Market Opportunity</h3>
           <div className="space-y-3">
-            {mockLocations
+            {market_Opportunity
               .map(location => ({
                 ...location,
-                opportunity: location.userCount / location.vendorCount
+                opportunity: location.userCount / (location.totalRevenue || 1)
               }))
               .sort((a, b) => b.opportunity - a.opportunity)
               .slice(0, 5)
               .map((location, index) => (
-                <div key={location.city} className="flex items-center space-x-3">
+                <div key={location.location} className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-bold text-purple-600">#{index + 1}</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{location.city}</p>
+                    <p className="text-sm font-medium text-gray-900">{location.location}</p>
                     <p className="text-xs text-gray-500">High demand market</p>
                   </div>
                   <div className="text-right">
@@ -219,12 +342,12 @@ export default function LocationInsights() {
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Market Penetration</h4>
             <div className="space-y-3">
-              {mockLocations.map((location) => {
-                const penetration = (location.orderCount / location.userCount) * 100;
+              {market_Penetration.map((location) => {
+                const penetration = (location.userCount / totalUsers) * 100;
                 return (
-                  <div key={location.city} className="space-y-2">
+                  <div key={location.location} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-900">{location.city}</span>
+                      <span className="text-sm font-medium text-gray-900">{location.location}</span>
                       <span className="text-sm text-gray-500">{penetration.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -242,13 +365,16 @@ export default function LocationInsights() {
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Revenue Distribution</h4>
             <div className="space-y-3">
-              {mockLocations.map((location) => {
-                const percentage = (location.revenue / totalRevenue) * 100;
+              {revenue_Distribution.map((location) => {
+                const safeRevenue = locations.reduce((sum, loc) => sum + (loc.revenue??0), 0); // prevent division by zero
+                const percentage = safeRevenue > 0
+                  ? Math.min((location.totalRevenue / safeRevenue) * 100, 100)
+                  : 0;
                 return (
-                  <div key={location.city} className="space-y-2">
+                  <div key={location.location} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-900">{location.city}</span>
-                      <span className="text-sm text-gray-500">${location.revenue.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-gray-900">{location.location}</span>
+                      <span className="text-sm text-gray-500">${location.totalRevenue.toLocaleString()}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -266,9 +392,9 @@ export default function LocationInsights() {
 
       {/* Location Data Table */}
       <DataTable
-        data={mockLocations}
+        data={locations}
         columns={locationColumns}
-        onRowClick={(location) => setSelectedLocation(location)}
+        onRowClick={handleRowClick}
       />
 
       {/* Location Detail Modal */}
@@ -319,7 +445,7 @@ export default function LocationInsights() {
                     <DollarSign className="h-5 w-5 text-yellow-600" />
                     <span className="ml-2 text-sm font-medium text-gray-900">Revenue</span>
                   </div>
-                  <p className="text-2xl font-bold text-yellow-600 mt-1">${selectedLocation.revenue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-yellow-600 mt-1">${selectedLocation.revenue}</p>
                 </div>
               </div>
 
@@ -331,25 +457,25 @@ export default function LocationInsights() {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Market Density</span>
                       <span className="text-sm font-medium text-gray-900">
-                        {(selectedLocation.userCount / selectedLocation.vendorCount).toFixed(1)} users/vendor
+                        {selectedLocation.vendorCount > 0 ? (selectedLocation.userCount / selectedLocation.vendorCount).toFixed(1): 0} users/vendor
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Average Order Value</span>
                       <span className="text-sm font-medium text-gray-900">
-                        ${(selectedLocation.revenue / selectedLocation.orderCount).toFixed(0)}
+                        ${selectedLocation.orderCount > 0 ?(selectedLocation.revenue / selectedLocation.orderCount).toFixed(0): 0}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Market Penetration</span>
                       <span className="text-sm font-medium text-gray-900">
-                        {((selectedLocation.orderCount / selectedLocation.userCount) * 100).toFixed(1)}%
+                        {selectedLocation.userCount > 0 ?((selectedLocation.orderCount / selectedLocation.userCount) * 100).toFixed(1):0}%
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Revenue per User</span>
                       <span className="text-sm font-medium text-gray-900">
-                        ${(selectedLocation.revenue / selectedLocation.userCount).toFixed(0)}
+                        ${selectedLocation.userCount > 0 ?(selectedLocation.revenue / selectedLocation.userCount).toFixed(0):0}
                       </span>
                     </div>
                   </div>

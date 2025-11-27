@@ -1,6 +1,17 @@
+type TopLocation = {
+  city: string;
+  userCount: number;
+  revenue: number;
+};
+type TopVendorLocation = {
+  location: string;
+  vendorCount: number;
+  userCount: number;
+  
+};
 import { TrendingUp, Users, DollarSign, Package, MapPin, Calendar, Star, ShoppingCart } from 'lucide-react';
 import StatCard from '../shared/StatCard';
-import { mockAnalytics, mockLocations } from '../../data/mockData';
+import { mockAnalytics } from '../../data/mockData';
 import { useEffect, useState } from 'react';
 
 export default function Analytics() {
@@ -9,6 +20,10 @@ export default function Analytics() {
   const [conversionRate, setConversionRate] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [newUsersToday, setNewUsersToday] = useState(0);
+  const [totalVendors, setTotalVendors] = useState(0);
+  const [averageRevenue, setAverageRevenue] = useState(0);
+  const [topLocations, setTopLocations] = useState<TopLocation[]>([]);
+  const [topVendorLocations, setTopVendorLocations] = useState<TopVendorLocation[]>([]);
   useEffect(() => {
     try{
       fetch("http://localhost:3000/api/users/growth")
@@ -26,9 +41,29 @@ export default function Analytics() {
     .then((data) => setTotalUsers(data.totalUsers))
     .catch(error => console.error('Error fetching user growth data:', error));
     
-    fetch("http://localhost:3000/api/users/new-users-today")
+    fetch("http://localhost:3000/api/users/new-today")
     .then((response) => response.json())
     .then((data) => setNewUsersToday(data.newUsersToday))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/vendors/total-vendors")
+    .then((response) => response.json())
+    .then((data) => setTotalVendors(data.totalVendors))
+    .catch(error => console.error('Error fetching user growth data:', error));
+
+    fetch("http://localhost:3000/api/vendors/avg-revenue")
+    .then((response) => response.json())
+    .then((data) => setAverageRevenue(data.averageRevenue))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/top-locations")
+    .then((response) => response.json())
+    .then((data) => setTopLocations(data.topLocations))
+    .catch(error => console.error('Error fetching user growth data:', error));
+
+    fetch("http://localhost:3000/api/vendors/top-vendor-locations")
+    .then((response) => response.json())
+    .then((data) => setTopVendorLocations(data.topLocations))
     .catch(error => console.error('Error fetching user growth data:', error));
   }
     catch(error){
@@ -93,7 +128,7 @@ export default function Analytics() {
                   <span className="ml-2 text-sm font-medium text-gray-900">New Today</span>
                 </div>
                 <p className="text-2xl font-bold text-green-600 mt-1">{newUsersToday}</p>
-                <p className="text-xs text-gray-500 mt-1">{userMetrics.usersThisWeek || 0} this week</p>
+                <p className="text-xs text-gray-500 mt-1">{userMetrics.usersThisWeek || 0 } this week</p>
               </div>
             </div>
             
@@ -134,7 +169,7 @@ export default function Analytics() {
                   <Users className="h-5 w-5 text-purple-600" />
                   <span className="ml-2 text-sm font-medium text-gray-900">Total Vendors</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-600 mt-1">{vendors.totalVendors}</p>
+                <p className="text-2xl font-bold text-purple-600 mt-1">{totalVendors}</p>
                 <p className="text-xs text-gray-500 mt-1">{vendors.pendingApproval} pending</p>
               </div>
               <div className="bg-yellow-50 p-4 rounded-lg">
@@ -142,7 +177,7 @@ export default function Analytics() {
                   <DollarSign className="h-5 w-5 text-yellow-600" />
                   <span className="ml-2 text-sm font-medium text-gray-900">Avg Revenue</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-600 mt-1">${vendors.averageRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-yellow-600 mt-1">${averageRevenue.toLocaleString()}</p>
                 <p className="text-xs text-gray-500 mt-1">per vendor</p>
               </div>
             </div>
@@ -252,7 +287,7 @@ export default function Analytics() {
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Top User Locations</h4>
             <div className="space-y-3">
-              {mockLocations.slice(0, 5).map((location, index) => (
+              {topLocations.slice(0, 5).map((location, index) => (
                 <div key={location.city} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -264,7 +299,7 @@ export default function Analytics() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{location.orderCount} orders</p>
+                    {/* <p className="text-sm font-medium text-gray-900">{location.orderCount} orders</p> */}
                     <p className="text-xs text-gray-500">${location.revenue.toLocaleString()}</p>
                   </div>
                 </div>
@@ -275,12 +310,12 @@ export default function Analytics() {
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Vendor Distribution</h4>
             <div className="space-y-3">
-              {mockLocations.slice(0, 5).map((location) => (
-                <div key={location.city} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              {topVendorLocations.slice(0, 5).map((location) => (
+                <div key={location.location} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <MapPin className="h-5 w-5 text-gray-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{location.city}</p>
+                      <p className="text-sm font-medium text-gray-900">{location.location}</p>
                       <p className="text-xs text-gray-500">{location.vendorCount} vendors</p>
                     </div>
                   </div>
