@@ -1,32 +1,96 @@
-import React from 'react';
+type TopLocation = {
+  city: string;
+  userCount: number;
+  revenue: number;
+};
+type TopVendorLocation = {
+  location: string;
+  vendorCount: number;
+  userCount: number;
+  
+};
 import { TrendingUp, Users, DollarSign, Package, MapPin, Calendar, Star, ShoppingCart } from 'lucide-react';
 import StatCard from '../shared/StatCard';
-import { mockAnalytics, mockProducts, mockLocations } from '../../data/mockData';
+import { mockAnalytics } from '../../data/mockData';
+import { useEffect, useState } from 'react';
 
 export default function Analytics() {
-  const { users, vendors, orders, products } = mockAnalytics;
+  const { users, vendors, products } = mockAnalytics;
+  const [userMetrics, setUserMetrics] = useState({usersLastWeek:0, usersThisWeek:0, userGrowthRate:0});
+  const [conversionRate, setConversionRate] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [newUsersToday, setNewUsersToday] = useState(0);
+  const [totalVendors, setTotalVendors] = useState(0);
+  const [averageRevenue, setAverageRevenue] = useState(0);
+  const [topLocations, setTopLocations] = useState<TopLocation[]>([]);
+  const [topVendorLocations, setTopVendorLocations] = useState<TopVendorLocation[]>([]);
+  useEffect(() => {
+    try{
+      fetch("http://localhost:3000/api/users/growth")
+    .then((response) => response.json())
+    .then((data) => setUserMetrics(data))
+    .catch(error => console.error('Error fetching user growth data:', error));
 
+    fetch("http://localhost:3000/api/users/conversion-rate")
+    .then((response) => response.json())
+    .then((data) => setConversionRate(data.conversionRate))
+    .catch(error => console.error('Error fetching user growth data:', error));
+      
+    fetch("http://localhost:3000/api/users/total-users")
+    .then((response) => response.json())
+    .then((data) => setTotalUsers(data.totalUsers))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/new-today")
+    .then((response) => response.json())
+    .then((data) => setNewUsersToday(data.newUsersToday))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/vendors/total-vendors")
+    .then((response) => response.json())
+    .then((data) => setTotalVendors(data.totalVendors))
+    .catch(error => console.error('Error fetching user growth data:', error));
+
+    fetch("http://localhost:3000/api/vendors/avg-revenue")
+    .then((response) => response.json())
+    .then((data) => setAverageRevenue(data.averageRevenue))
+    .catch(error => console.error('Error fetching user growth data:', error));
+    
+    fetch("http://localhost:3000/api/users/top-locations")
+    .then((response) => response.json())
+    .then((data) => setTopLocations(data.topLocations))
+    .catch(error => console.error('Error fetching user growth data:', error));
+
+    fetch("http://localhost:3000/api/vendors/top-vendor-locations")
+    .then((response) => response.json())
+    .then((data) => setTopVendorLocations(data.topLocations))
+    .catch(error => console.error('Error fetching user growth data:', error));
+  }
+    catch(error){
+      console.error('Error in useEffect:', error);
+    }
+  },[])
   return (
     <div className="space-y-6">
       {/* Key Performance Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="User Growth Rate"
-          value={`${users.userGrowthRate}%`}
-          change={users.userGrowthRate}
+          value={`${userMetrics.userGrowthRate}`}
+          // change={users.userGrowthRate}
           changeType="increase"
           icon={TrendingUp}
           color="green"
         />
         <StatCard
           title="Conversion Rate"
-          value={`${users.conversionRate}%`}
-          change={2.1}
+          value={`${conversionRate}`}
+          // change={2.1}
           changeType="increase"
           icon={ShoppingCart}
           color="blue"
         />
-        <StatCard
+        {/* <StatCard
           title="Monthly Revenue"
           value={`$${orders.revenueThisMonth.toLocaleString()}`}
           change={15.7}
@@ -41,7 +105,7 @@ export default function Analytics() {
           changeType="increase"
           icon={Package}
           color="purple"
-        />
+        /> */}
       </div>
 
       {/* User Analytics */}
@@ -55,26 +119,26 @@ export default function Analytics() {
                   <Users className="h-5 w-5 text-blue-600" />
                   <span className="ml-2 text-sm font-medium text-gray-900">Total Users</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-600 mt-1">{users.totalUsers.toLocaleString()}</p>
-                <p className="text-xs text-gray-500 mt-1">+{users.userGrowthRate}% growth</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{totalUsers.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-1">+{userMetrics.toLocaleString()}% growth</p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center">
                   <Calendar className="h-5 w-5 text-green-600" />
                   <span className="ml-2 text-sm font-medium text-gray-900">New Today</span>
                 </div>
-                <p className="text-2xl font-bold text-green-600 mt-1">{users.newUsersToday}</p>
-                <p className="text-xs text-gray-500 mt-1">{users.newUsersThisWeek} this week</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">{newUsersToday}</p>
+                <p className="text-xs text-gray-500 mt-1">{userMetrics.usersThisWeek || 0 } this week</p>
               </div>
             </div>
             
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Conversion Rate</span>
-                <span className="text-sm font-medium text-green-600">{users.conversionRate}%</span>
+                <span className="text-sm font-medium text-green-600">{conversionRate}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${users.conversionRate}%` }}></div>
+                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${conversionRate}` }}></div>
               </div>
               
               <div className="flex justify-between items-center">
@@ -105,7 +169,7 @@ export default function Analytics() {
                   <Users className="h-5 w-5 text-purple-600" />
                   <span className="ml-2 text-sm font-medium text-gray-900">Total Vendors</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-600 mt-1">{vendors.totalVendors}</p>
+                <p className="text-2xl font-bold text-purple-600 mt-1">{totalVendors}</p>
                 <p className="text-xs text-gray-500 mt-1">{vendors.pendingApproval} pending</p>
               </div>
               <div className="bg-yellow-50 p-4 rounded-lg">
@@ -113,7 +177,7 @@ export default function Analytics() {
                   <DollarSign className="h-5 w-5 text-yellow-600" />
                   <span className="ml-2 text-sm font-medium text-gray-900">Avg Revenue</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-600 mt-1">${vendors.averageRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-yellow-600 mt-1">${averageRevenue.toLocaleString()}</p>
                 <p className="text-xs text-gray-500 mt-1">per vendor</p>
               </div>
             </div>
@@ -223,7 +287,7 @@ export default function Analytics() {
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Top User Locations</h4>
             <div className="space-y-3">
-              {mockLocations.slice(0, 5).map((location, index) => (
+              {topLocations.slice(0, 5).map((location, index) => (
                 <div key={location.city} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -235,7 +299,7 @@ export default function Analytics() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{location.orderCount} orders</p>
+                    {/* <p className="text-sm font-medium text-gray-900">{location.orderCount} orders</p> */}
                     <p className="text-xs text-gray-500">${location.revenue.toLocaleString()}</p>
                   </div>
                 </div>
@@ -246,12 +310,12 @@ export default function Analytics() {
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Vendor Distribution</h4>
             <div className="space-y-3">
-              {mockLocations.slice(0, 5).map((location) => (
-                <div key={location.city} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              {topVendorLocations.slice(0, 5).map((location) => (
+                <div key={location.location} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <MapPin className="h-5 w-5 text-gray-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{location.city}</p>
+                      <p className="text-sm font-medium text-gray-900">{location.location}</p>
                       <p className="text-xs text-gray-500">{location.vendorCount} vendors</p>
                     </div>
                   </div>

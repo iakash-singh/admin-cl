@@ -1,14 +1,72 @@
-import React, { useState } from 'react';
-import { User, UserPlus, Mail, Calendar, MapPin, Shield, Eye, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, UserPlus, Calendar, Shield, X } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
-import { mockUsers, mockAnalytics } from '../../data/mockData';
+import { mockAnalytics } from '../../data/mockData';
 import { User as UserType } from '../../types';
 import { createPortal } from 'react-dom';
 
 export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
+  const [totalUsers, setTotalUsers] = useState(null);
+  const [NewUsers, setNewUsers] = useState(null);
+  const [Users, setUsers] = useState({
+    newUsersThisWeek: 0,
+    userGrowthRate: 0,
+    usersLastWeek: 0,
+  });
+  const [engagement, setEngagement] = useState({
+    cartAbondonmentRate: 0,
+    activeUserRate: 0,
+  }); 
+  const [allUsers, setAllUsers] = useState([]);
+
   const { users } = mockAnalytics;
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/users/total-users")
+    .then((response) => response.json())
+    .then((data) => setTotalUsers(data.totalUsers))
+    .catch(error => console.error('Error fetching total users:', error));
+    
+    fetch("http://localhost:3000/api/users/new-today")
+    .then((response) => response.json())
+    .then((data) => setNewUsers(data.newUsersToday))
+    .catch(error => console.error('Error fetching total users:', error));
+  
+    fetch("http://localhost:3000/api/users/growth")
+    .then((response) => response.json())
+    .then((data) => setUsers(data))
+    .catch(error => console.error('Error fetching user growth data:', error));
+
+    fetch("http://localhost:3000/api/users/engagement")
+    .then((response) => response.json())
+    .then((data) => setEngagement(data))
+    .catch(error => console.error('Error fetching user engagement data:', error));
+
+    const fetchUsers = async () => {
+      try{
+        const res = await fetch("http://localhost:3000/api/users/users");
+        const data = await res.json();
+        setAllUsers(data);
+      }
+      catch(err){
+        console.error('Error fetching all users:', err);
+      }
+    }
+    fetchUsers();
+  }, []);
+
+  const handleRowClick = async (user:any) => {
+    try{
+      const res = await fetch(`http://localhost:3000/api/users/${user.id}`);
+      const data = await res.json();
+      setSelectedUser(data);
+    }
+    catch(err){
+      console.error('Error fetching user details:', err);
+    }
+  }
 
   const userColumns = [
     {
@@ -37,7 +95,7 @@ export default function UserManagement() {
       sortable: true
     },
     {
-      key: 'userType',
+      key: 'role',
       label: 'Type',
       render: (value: string) => (
         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${value === 'admin' ? 'bg-purple-100 text-purple-800' :
@@ -61,21 +119,21 @@ export default function UserManagement() {
       )
     },
     {
-      key: 'totalRentals',
+      key: 'rentals',
       label: 'Rentals',
       sortable: true
     },
     {
-      key: 'totalSpent',
+      key: 'total_spend',
       label: 'Total Spent',
       sortable: true,
-      render: (value: number) => `$${value.toLocaleString()}`
+      render: (value: number | null | undefined) => `$${(value??0).toLocaleString()}`
     },
     {
-      key: 'registrationDate',
+      key: 'created_at',
       label: 'Joined',
       sortable: true,
-      render: (value: string) => new Date(value).toLocaleDateString()
+      render: (value: string| null) => value ? new Date(value).toLocaleDateString() : "-"
     }
   ];
 
@@ -85,7 +143,7 @@ export default function UserManagement() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Users"
-          value={users.totalUsers.toLocaleString()}
+          value={totalUsers ?? "Loading..."}
           change={users.userGrowthRate}
           changeType="increase"
           icon={User}
@@ -93,7 +151,7 @@ export default function UserManagement() {
         />
         <StatCard
           title="New Users Today"
-          value={users.newUsersToday}
+          value={NewUsers ?? "Loading..."}
           icon={UserPlus}
           color="green"
         />
@@ -122,14 +180,18 @@ export default function UserManagement() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">This Week</span>
-              <span className="text-sm font-medium text-gray-900">{users.newUsersThisWeek}</span>
+              <span className="text-sm font-medium text-gray-900">{Users.newUsersThisWeek}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Last Week</span>
+              <span className="text-sm font-medium text-gray-900">{Users.usersLastWeek}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Growth Rate</span>
-              <span className="text-sm font-medium text-emerald-600">+{users.userGrowthRate}%</span>
+              <span className="text-sm font-medium text-emerald-600">+{Users.userGrowthRate}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${users.userGrowthRate}%` }}></div>
+              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Users.userGrowthRate}` }}></div>
             </div>
           </div>
         </div>
@@ -139,22 +201,22 @@ export default function UserManagement() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Active Users</span>
-              <span className="text-sm font-medium text-emerald-600">89.2%</span>
+              <span className="text-sm font-medium text-emerald-600">{engagement.activeUserRate}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Cart Abandonment</span>
-              <span className="text-sm font-medium text-red-600">{users.cartAbandonmentRate}%</span>
+              <span className="text-sm font-medium text-red-600">{engagement.cartAbondonmentRate}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '89%' }}></div>
-            </div>  
+              <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(engagement.activeUserRate)}` }}></div>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Signups</h3>
           <div className="space-y-3">
-            {mockUsers.slice(0, 3).map((user) => (
+            {allUsers.slice(0, 3).map((user) => (
               <div key={user.id} className="flex items-center space-x-3">
                 {user.avatar ? (
                   <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
@@ -165,19 +227,19 @@ export default function UserManagement() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                  <p className="text-xs text-gray-500">{new Date(user.registrationDate).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-500">{new Date(user.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Users Table */}
       <DataTable
-        data={mockUsers}
+        data={Array.isArray(allUsers)? allUsers : []}
         columns={userColumns}
-        onRowClick={(user) => setSelectedUser(user)}
+        onRowClick={handleRowClick}
       />
 
       {/* User Detail Modal */}

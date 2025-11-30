@@ -1,18 +1,58 @@
-import React from 'react';
-import { Users, Store, Package, DollarSign, TrendingUp, Calendar, Star, MapPin } from 'lucide-react';
+import { Users, Store, Package, DollarSign, Calendar } from 'lucide-react';
 import StatCard from '../shared/StatCard';
 import { mockAnalytics } from '../../data/mockData';
+import { useEffect, useState } from 'react';
 
 export default function Overview() {
   const { users, vendors, orders } = mockAnalytics;
+  const [totalUsers, setTotalUsers] = useState(null);
+  const [NewUsers, setNewUsers] = useState(null);
+  const [totalVendors, setTotalVendors] = useState(null);
+  const [totalOrders, setTotalOrders] = useState(null);
 
+  const [Orders, setOrders] = useState({
+    activeOrders: 0,
+    pendingOrders: 0,
+    disputedOrders: 0,
+    completedOrders: 0,
+    totalOrders: 1,
+  });
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/users/total-users")
+    .then((response) => response.json())
+    .then((data) => setTotalUsers(data.totalUsers))
+    .catch(error => console.error('Error fetching total users:', error));
+    
+    fetch("http://localhost:3000/api/users/new-today")
+    .then((response) => response.json())
+    .then((data) => setNewUsers(data.newUsersToday))
+    .catch(error => console.error('Error fetching total users:', error));
+
+    fetch("http://localhost:3000/api/vendors/total-vendors")
+    .then((response) => response.json())
+    .then((data) => setTotalVendors(data.totalVendors))
+    .catch(error => console.error('Error fetching total vendors:', error));
+
+    fetch("http://localhost:3000/api/orders/total-orders")
+    .then((response) => response.json())
+    .then((data) => setTotalOrders(data.totalOrders))
+    .catch(error => console.error('Error fetching total orders:', error));
+    
+    fetch("http://localhost:3000/api/orders/status-review")
+    .then((response) => response.json())
+    .then((data) => setOrders(data))
+    .catch(error => console.error('Error fetching total orders:', error));
+
+  },[])
+  
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Users"
-          value={users.totalUsers.toLocaleString()}
+          value={totalUsers ?? "Loading.. "}
           change={users.userGrowthRate}
           changeType="increase"
           icon={Users}
@@ -20,7 +60,7 @@ export default function Overview() {
         />
         <StatCard
           title="Active Vendors"
-          value={vendors.totalVendors}
+          value={totalVendors ?? "Loading"}
           change={5.2}
           changeType="increase"
           icon={Store}
@@ -28,7 +68,7 @@ export default function Overview() {
         />
         <StatCard
           title="Total Orders"
-          value={orders.totalOrders.toLocaleString()}
+          value={totalOrders ?? "Loading"}
           change={8.1}
           changeType="increase"
           icon={Package}
@@ -48,24 +88,19 @@ export default function Overview() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           title="New Users Today"
-          value={users.newUsersToday}
+          value={NewUsers ?? "Loading"}
           icon={Calendar}
           color="blue"
         />
-        <StatCard
+        {/* <StatCard
           title="Conversion Rate"
           value={`${users.conversionRate}%`}
           change={2.1}
           changeType="increase"
           icon={TrendingUp}
           color="green"
-        />
-        <StatCard
-          title="Pending Approvals"
-          value={vendors.pendingApproval}
-          icon={Star}
-          color="yellow"
-        />
+        /> */}
+        
       </div>
 
       {/* Quick Stats Grid */}
@@ -78,36 +113,36 @@ export default function Overview() {
               <span className="text-sm text-gray-600">Active Orders</span>
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: '68%' }}></div>
+                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(Orders.activeOrders / Orders.totalOrders)*100}` }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{orders.activeOrders}</span>
+                <span className="text-sm font-medium text-gray-900">{Orders.activeOrders}</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Pending Orders</span>
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: '32%' }}></div>
+                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${(Orders.pendingOrders / Orders.totalOrders)*100}` }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{orders.pendingOrders}</span>
+                <span className="text-sm font-medium text-gray-900">{Orders.pendingOrders}</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Disputed Orders</span>
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                  <div className="bg-red-500 h-2 rounded-full" style={{ width: '8%' }}></div>
+                  <div className="bg-red-500 h-2 rounded-full" style={{ width: `${(Orders.disputedOrders / Orders.totalOrders)*100}` }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{orders.disputedOrders}</span>
+                <span className="text-sm font-medium text-gray-900">{Orders.disputedOrders}</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Completed Orders</span>
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '89%' }}></div>
+                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(Orders.completedOrders / Orders.totalOrders)*100}` }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{orders.completedOrders}</span>
+                <span className="text-sm font-medium text-gray-900">{Orders.completedOrders}</span>
               </div>
             </div>
           </div>

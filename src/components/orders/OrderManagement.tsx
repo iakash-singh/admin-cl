@@ -1,20 +1,83 @@
-import React, { useState } from 'react';
-import { Package, Clock, CheckCircle, XCircle, AlertTriangle, Calendar, DollarSign, User, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Package, Clock, CheckCircle, XCircle, AlertTriangle, Calendar, DollarSign, User } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
-import { mockOrders, mockAnalytics } from '../../data/mockData';
 import { Order } from '../../types';
 import { createPortal } from 'react-dom';
 
 export default function OrderManagement() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const { orders } = mockAnalytics;
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [orderStatus, setOrderStatus] = useState({activeOrders: 0,
+    pendingOrders: 0,
+    disputedOrders: 0,
+    completedOrders: 0,});
+  const [allOrders, setAllOrders] = useState([]);
+  const [activeOrders, setActiveOrders] = useState(0);
+  const [completedOrders, setCompletedOrders] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [todayRevenue, setTodayRevenue] = useState(0);
+  const [averageOrderValue, setAverageOrderValue] = useState(0);
+  const [orderSuccessRate, setOrderSuccessRate] = useState(0);
+  // const { orders } = mockAnalytics;
 
-  const filteredOrders = filterStatus === 'all'
-    ? mockOrders
-    : mockOrders.filter(order => order.status === filterStatus);
+  // const filteredOrders = filterStatus === 'all' 
+  //   ? mockOrders 
+  //   : mockOrders.filter(order => order.status === filterStatus);
 
+
+  useEffect(() => {
+    try{
+      fetch('http://localhost:3000/api/orders/total-orders')
+      .then(response => response.json())
+      .then(data => setTotalOrders(data.totalOrders))
+      .catch(error => console.error('Error fetching total orders:', error));
+
+      fetch('http://localhost:3000/api/orders/status-review')
+      .then(response => response.json())
+      .then(data => setOrderStatus(data))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/active-orders')
+      .then(response => response.json())
+      .then(data => setActiveOrders(data.activeOrders))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/completed-orders')
+      .then(response => response.json())
+      .then(data => setCompletedOrders(data.completedOrders))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/total-revenue')
+      .then(response => response.json())
+      .then(data => setTotalRevenue(data.totalRevenue))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/today-revenue')
+      .then(response => response.json())
+      .then(data => setTodayRevenue(data.todayRevenue))
+      .catch(error => console.error('Error fetching total orders:', error));
+
+      fetch('http://localhost:3000/api/orders/average-order-value')
+      .then(response => response.json())
+      .then(data => setAverageOrderValue(data.averageOrderValue))
+      .catch(error => console.error('Error fetching total orders:', error));
+
+      fetch('http://localhost:3000/api/orders/order-success-rate')
+      .then(response => response.json())
+      .then(data => setOrderSuccessRate(data.orderSuccessRate))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/all-orders')
+      .then(response => response.json())
+      .then(data => {setAllOrders(data.orders)})
+      .catch(error => console.error('Error fetching all orders:', error));
+    }
+    catch(err){
+      console.error('Unexpected error:', err);
+    }
+  }, [])
   const orderColumns = [
     {
       key: 'id',
@@ -85,7 +148,7 @@ export default function OrderManagement() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Orders"
-          value={orders.totalOrders.toLocaleString()}
+          value={totalOrders.toLocaleString()}
           change={8.5}
           changeType="increase"
           icon={Package}
@@ -93,21 +156,21 @@ export default function OrderManagement() {
         />
         <StatCard
           title="Active Orders"
-          value={orders.activeOrders}
+          value={activeOrders.toLocaleString()}
           icon={Clock}
           color="yellow"
         />
         <StatCard
           title="Completed Orders"
-          value={orders.completedOrders.toLocaleString()}
+          value={completedOrders.toLocaleString()}
           change={12.3}
           changeType="increase"
           icon={CheckCircle}
           color="green"
         />
         <StatCard
-          title="Monthly Revenue"
-          value={`$${orders.revenueThisMonth.toLocaleString()}`}
+          title="Total Revenue"
+          value={`$${totalRevenue.toLocaleString()}`}
           change={15.7}
           changeType="increase"
           icon={DollarSign}
@@ -122,19 +185,19 @@ export default function OrderManagement() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Active</span>
-              <span className="text-sm font-medium text-blue-600">{orders.activeOrders}</span>
+              <span className="text-sm font-medium text-blue-600">{orderStatus.activeOrders}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Pending</span>
-              <span className="text-sm font-medium text-yellow-600">{orders.pendingOrders}</span>
+              <span className="text-sm font-medium text-yellow-600">{orderStatus.pendingOrders}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Completed</span>
-              <span className="text-sm font-medium text-green-600">{orders.completedOrders}</span>
+              <span className="text-sm font-medium text-green-600">{orderStatus.completedOrders}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Disputed</span>
-              <span className="text-sm font-medium text-red-600">{orders.disputedOrders}</span>
+              <span className="text-sm font-medium text-red-600">{orderStatus.disputedOrders}</span>
             </div>
           </div>
         </div>
@@ -142,24 +205,24 @@ export default function OrderManagement() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Today</h3>
           <div className="text-center">
-            <p className="text-3xl font-bold text-green-600">${orders.revenueToday.toLocaleString()}</p>
-            <p className="text-sm text-gray-500 mt-1">+12.5% from yesterday</p>
+            <p className="text-3xl font-bold text-green-600">${todayRevenue.toLocaleString()}</p>
+            {/* <p className="text-sm text-gray-500 mt-1">+12.5% from yesterday</p> */}
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Average Order Value</h3>
           <div className="text-center">
-            <p className="text-3xl font-bold text-blue-600">$142</p>
-            <p className="text-sm text-gray-500 mt-1">+5.2% this month</p>
+            <p className="text-3xl font-bold text-blue-600">${averageOrderValue.toPrecision(3)}</p>
+            {/* <p className="text-sm text-gray-500 mt-1">+5.2% this month</p> */}
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Success Rate</h3>
           <div className="text-center">
-            <p className="text-3xl font-bold text-purple-600">94.2%</p>
-            <p className="text-sm text-gray-500 mt-1">+2.1% this month</p>
+            <p className="text-3xl font-bold text-purple-600">${orderSuccessRate.toPrecision(2)}%</p>
+            {/* <p className="text-sm text-gray-500 mt-1">+2.1% this month</p> */}
           </div>
         </div>
       </div>
@@ -184,7 +247,7 @@ export default function OrderManagement() {
         </div>
 
         <DataTable
-          data={filteredOrders}
+          data={allOrders}
           columns={orderColumns}
           onRowClick={(order) => setSelectedOrder(order)}
         />
@@ -206,7 +269,7 @@ export default function OrderManagement() {
                   onClick={() => setSelectedOrder(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <X />
+                  
                 </button>
               </div>
             </div>
