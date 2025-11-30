@@ -125,3 +125,45 @@ export const marketcoverage = async (req, res) => {
     res.json({ marketCoverage: locations.length });
 }
 
+export const getAllOrders = async (req, res) => {
+    const { data, error } = await supabase
+    .from('orders_info')
+    .select('*');
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+    const formatted = data.map(o => ({
+      id: o.id,
+      userName: o.customer,
+      vendorName: o.vendor,
+      productName: o.product,
+      status: o.status.toLowerCase(),
+      totalAmount: o.amount,
+      createdAt: o.created_at,
+      startDate: o.created_at,
+      endDate: o.end_date,
+      paymentStatus: o.payment_status,
+      location: o.location
+  }));
+    res.json({ orders: formatted });
+}
+
+export const getOrderDetailsById = async (req, res) => {
+    let rawId = String(req.params.id || '').trim();
+    // Keep only numeric characters
+    rawId = rawId.replace('^:+/',''); // Sanitize input
+    const numericID = Number(rawId);
+    if(isNaN(numericID)){
+        console.error("Invalid order ID:", rawId);
+        return res.status(400).json({ error: "Invalid order ID" });
+    }
+    const { data, error } = await supabase
+    .from('orders_info')
+    .select('*')
+    .eq('id', numericID)
+    .single();
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+    res.json({ order: data });
+}

@@ -1,5 +1,5 @@
 import express from 'express';
-import { marketcoverage,getOrderSuccessRate ,getAverageOrderValue ,getTotalOrders, getOrderStatus, getActiveOrders, getCompletedOrders, getTotalRevenue, getTodayRevenue } from '../controllers/ordersController.js';
+import { marketcoverage,getOrderSuccessRate ,getAverageOrderValue ,getTotalOrders,getAllOrders,getOrderDetailsById, getOrderStatus, getActiveOrders, getCompletedOrders, getTotalRevenue, getTodayRevenue } from '../controllers/ordersController.js';
 
 const router = express.Router();
 
@@ -12,5 +12,8 @@ router.get('/today-revenue', getTodayRevenue);
 router.get('/average-order-value', getAverageOrderValue);
 router.get('/order-success-rate', getOrderSuccessRate);
 router.get('/market-coverage', marketcoverage);
+router.get('/all-orders', getAllOrders);
+router.get('/:id', getOrderDetailsById);
+
 
 export default router;

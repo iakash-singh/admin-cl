@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, XCircle, AlertTriangle, Calendar, DollarSign, User } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
-import { mockOrders } from '../../data/mockData';
 import { Order } from '../../types';
 
 export default function OrderManagement() {
@@ -13,7 +12,7 @@ export default function OrderManagement() {
     pendingOrders: 0,
     disputedOrders: 0,
     completedOrders: 0,});
-
+  const [allOrders, setAllOrders] = useState([]);
   const [activeOrders, setActiveOrders] = useState(0);
   const [completedOrders, setCompletedOrders] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -22,9 +21,9 @@ export default function OrderManagement() {
   const [orderSuccessRate, setOrderSuccessRate] = useState(0);
   // const { orders } = mockAnalytics;
 
-  const filteredOrders = filterStatus === 'all' 
-    ? mockOrders 
-    : mockOrders.filter(order => order.status === filterStatus);
+  // const filteredOrders = filterStatus === 'all' 
+  //   ? mockOrders 
+  //   : mockOrders.filter(order => order.status === filterStatus);
 
 
   useEffect(() => {
@@ -68,6 +67,11 @@ export default function OrderManagement() {
       .then(response => response.json())
       .then(data => setOrderSuccessRate(data.orderSuccessRate))
       .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/all-orders')
+      .then(response => response.json())
+      .then(data => {setAllOrders(data.orders)})
+      .catch(error => console.error('Error fetching all orders:', error));
     }
     catch(err){
       console.error('Unexpected error:', err);
@@ -242,7 +246,7 @@ export default function OrderManagement() {
         </div>
         
         <DataTable
-          data={filteredOrders}
+          data={allOrders}
           columns={orderColumns}
           onRowClick={(order) => setSelectedOrder(order)}
         />
