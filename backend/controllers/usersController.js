@@ -394,8 +394,11 @@ export const revenueDistributionByLocation = async (req, res) => {
 };
 
 export const getUserDetailsById = async (req, res) => {
-    let {id} = req.params;
     
+    let rawId = String(req.params.id || '').trim();
+
+    rawId = rawId.replace(/^:+/, ''); // Keep only numeric characters
+    const numericId = Number(rawId);
     id = String(id).replace(':','').trim(); // Sanitize input
     const numericID = Number(id);
 

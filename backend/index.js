@@ -22,9 +22,7 @@ app.use("/api/locations", locationRoutes);
 app.get('/',(req,res)=>{
     res.send('Admin Backend is running');
 })
-
-
-
+    
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 })

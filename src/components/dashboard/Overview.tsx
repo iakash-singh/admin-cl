@@ -1,4 +1,4 @@
-import { Users, Store, Package, DollarSign, Calendar, Star } from 'lucide-react';
+import { Users, Store, Package, DollarSign, Calendar } from 'lucide-react';
 import StatCard from '../shared/StatCard';
 import { mockAnalytics } from '../../data/mockData';
 import { useEffect, useState } from 'react';

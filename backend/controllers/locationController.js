@@ -21,7 +21,7 @@ export const getAllLocations = async (req, res) => {
       if (u.location) userCityMap[u.id] = u.location.trim();
     });
     
-    const locationMap = new Set();
+    const locationMap = {};
 
     users?.forEach(u=>{
         if(!u.location) return;

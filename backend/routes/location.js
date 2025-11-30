@@ -3,7 +3,7 @@ import { getAllLocations, getLocationDetails } from "../controllers/locationCont
 
 const router = express.Router();
 
-router.get("/", getAllLocations);         // → For DataTable
-router.get("/:city", getLocationDetails); // → For Modal
+router.get("/", getAllLocations);         
+router.get("/:city", getLocationDetails); 
 
 export default router;
