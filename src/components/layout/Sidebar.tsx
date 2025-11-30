@@ -1,11 +1,11 @@
-import React from 'react';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Store, 
-  Package, 
-  MessageSquare, 
-  BarChart3, 
+import { useState } from 'react';
+import {
+  LayoutDashboard,
+  Users,
+  Store,
+  Package,
+  MessageSquare,
+  BarChart3,
   Settings,
   Shield,
   FileText,
@@ -31,40 +31,56 @@ const navigation = [
 ];
 
 export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <div className="bg-white border-r border-gray-200 w-64 min-h-screen">
-      <div className="p-6">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <LayoutDashboard className="h-6 w-6 text-white" />
+    <div
+      className={`fixed top-0 left-0 h-screen bg-white text-gray-900 transition-all duration-300 ease-out z-50 ${isExpanded ? 'w-64' : 'w-16'
+        } border-r border-gray-200`}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+    >
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <LayoutDashboard className="h-5 w-5 text-white" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">RentAdmin</h1>
-            <p className="text-sm text-gray-500">Admin Dashboard</p>
+          <div
+            className={`ml-3 transition-all duration-300 ease-out overflow-hidden ${isExpanded ? 'max-w-xs opacity-100' : 'max-w-0 opacity-0'
+              }`}
+          >
+            <h1 className="text-lg font-bold whitespace-nowrap">RentAdmin</h1>
+            <p className="text-xs text-gray-600 whitespace-nowrap">Admin Dashboard</p>
           </div>
         </div>
       </div>
 
-      <nav className="px-4 pb-4">
-        <ul className="space-y-1">
+      {/* Navigation */}
+      <nav className="flex-1 px-2 py-4">
+        <ul className='space-y-1' >
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
-            
             return (
               <li key={item.id}>
                 <button
                   onClick={() => onSectionChange(item.id)}
-                  className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                  className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ease-out group ${isActive
+                    ? 'bg-blue-100 text-blue-800 shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
                 >
-                  <Icon className={`mr-3 h-5 w-5 ${
-                    isActive ? 'text-blue-700' : 'text-gray-400'
-                  }`} />
-                  {item.name}
+                  <Icon
+                    className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'
+                      }`}
+                  />
+                  <span
+                    className={`ml-3 transition-all duration-300 ease-out overflow-hidden whitespace-nowrap ${isExpanded ? 'max-w-xs opacity-100' : 'max-w-0 opacity-0'
+                      }`}
+                  >
+                    {item.name}
+                  </span>
                 </button>
               </li>
             );

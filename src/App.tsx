@@ -55,7 +55,7 @@ function App() {
       <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
       <div className="flex-1">
         <Header activeSection={activeSection} />
-        <main className="p-6">
+        <main className="p-6 max-w-6xl mx-auto">
           {renderContent()}
         </main>
       </div>
