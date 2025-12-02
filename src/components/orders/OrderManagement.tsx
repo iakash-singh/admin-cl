@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { Package, Clock, CheckCircle, Calendar, DollarSign, User, X } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
-
 import { createPortal } from 'react-dom';
 import { supabase } from '../../services/supabaseClient';
-
 type OrderRow = {
   id: number;
   created_at: string | null;
@@ -155,7 +153,6 @@ export default function OrderManagement() {
       sortable: true
     },
     {
-
     key: "status",
     label: "Status",
     sortable: true,
@@ -174,7 +171,6 @@ export default function OrderManagement() {
       );
     }
   },
-
     {
       key: 'amount',
       label: 'Amount',
@@ -298,7 +294,7 @@ export default function OrderManagement() {
             </select>
           </div>
         </div>
-        
+
         <DataTable
           data={filteredOrders}
           columns={orderColumns}
@@ -307,7 +303,7 @@ export default function OrderManagement() {
       </div>
 
       {/* Order Detail Modal */}
-      {selectedOrder && (
+      {selectedOrder && createPortal((
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
@@ -322,11 +318,11 @@ export default function OrderManagement() {
                   onClick={() => setSelectedOrder(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  ×
+                  <X />
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Order Status */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -338,15 +334,14 @@ export default function OrderManagement() {
                   </div>
                 </div>
                 <div className="text-right">
-
-                  <p className="text-2xl font-bold text-gray-900">${selectedOrder.amount}</p>
-                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${selectedOrder.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                  <p className="text-2xl font-bold text-gray-900">${totalRevenue}</p>
+                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                    selectedOrder.status === 'active' ? 'bg-blue-100 text-blue-800' :
                     selectedOrder.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      selectedOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                    }`}>
+                    selectedOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
                     {(selectedOrder.status ?? '').charAt(0).toUpperCase() + (selectedOrder.status ?? '').slice(1)}
-
                   </span>
                 </div>
               </div>
@@ -381,13 +376,12 @@ export default function OrderManagement() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Payment Status</span>
-
-                      <span className={`text-sm font-medium ${selectedOrder.payment_status === 'done' ? 'text-green-600' :
-                        selectedOrder.payment_status === 'pending' ? 'text-yellow-600' :
-                          'text-red-600'
-                        }`}>
+                      <span className={`text-sm font-medium ${
+                        (selectedOrder.payment_status ?? '') === 'paid' ? 'text-green-600' :
+                        (selectedOrder.payment_status ?? '') === 'pending' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
                         {(selectedOrder.payment_status ?? '').charAt(0).toUpperCase() + (selectedOrder.payment_status ?? '').slice(1)}
-
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -455,7 +449,7 @@ export default function OrderManagement() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

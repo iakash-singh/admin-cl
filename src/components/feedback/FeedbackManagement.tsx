@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { MessageSquare, Star, ThumbsUp, Filter, Flag, CheckCircle } from 'lucide-react';
+import { MessageSquare, Star, ThumbsUp, Filter, Flag, CheckCircle, X } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
 import { mockFeedback } from '../../data/mockData';
 import { Feedback } from '../../types';
+import { createPortal } from 'react-dom';
 
 export default function FeedbackManagement() {
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
@@ -60,24 +61,10 @@ export default function FeedbackManagement() {
       label: 'Rating',
       render: (value: number) => (
         <div className="flex items-center">
-          {[...Array(5)].map((_, i) => (
-            <Star
-              key={i}
-              className={`h-4 w-4 ${
-                i < value ? 'text-yellow-400 fill-current' : 'text-gray-300'
-              }`}
-            />
-          ))}
+          <Star
+            className={`h-4 w-4 text-yellow-400 fill-current`}
+          />
           <span className="ml-2 text-sm font-medium">{value}</span>
-        </div>
-      )
-    },
-    {
-      key: 'comment',
-      label: 'Comment',
-      render: (value: string) => (
-        <div className="max-w-xs">
-          <p className="text-sm text-gray-900 truncate">{value}</p>
         </div>
       )
     },
@@ -85,11 +72,10 @@ export default function FeedbackManagement() {
       key: 'status',
       label: 'Status',
       render: (value: string) => (
-        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-          value === 'approved' ? 'bg-green-100 text-green-800' :
+        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${value === 'approved' ? 'bg-green-100 text-green-800' :
           value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
-        }`}>
+            'bg-red-100 text-red-800'
+          }`}>
           {value === 'approved' ? (
             <CheckCircle className="h-3 w-3 mr-1" />
           ) : value === 'pending' ? (
@@ -120,7 +106,7 @@ export default function FeedbackManagement() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Feedback Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
@@ -160,7 +146,7 @@ export default function FeedbackManagement() {
           {[5, 4, 3, 2, 1].map((rating) => {
             const count = mockFeedback.filter(f => f.rating === rating).length;
             const percentage = (count / totalFeedback) * 100;
-            
+
             return (
               <div key={rating} className="flex items-center space-x-3">
                 <div className="flex items-center w-16">
@@ -212,7 +198,7 @@ export default function FeedbackManagement() {
             </select>
           </div>
         </div>
-        
+
         <DataTable
           data={filteredFeedback}
           columns={feedbackColumns}
@@ -221,7 +207,7 @@ export default function FeedbackManagement() {
       </div>
 
       {/* Feedback Detail Modal */}
-      {selectedFeedback && (
+      {selectedFeedback && createPortal((
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
@@ -231,11 +217,11 @@ export default function FeedbackManagement() {
                   onClick={() => setSelectedFeedback(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  ×
+                  <X />
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Review Header */}
               <div className="flex items-start space-x-4">
@@ -245,11 +231,10 @@ export default function FeedbackManagement() {
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <h4 className="font-semibold text-gray-900">{selectedFeedback.userName}</h4>
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                      selectedFeedback.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${selectedFeedback.status === 'approved' ? 'bg-green-100 text-green-800' :
                       selectedFeedback.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
+                        'bg-red-100 text-red-800'
+                      }`}>
                       {selectedFeedback.status.charAt(0).toUpperCase() + selectedFeedback.status.slice(1)}
                     </span>
                   </div>
@@ -266,9 +251,8 @@ export default function FeedbackManagement() {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`h-6 w-6 ${
-                      i < selectedFeedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                    }`}
+                    className={`h-6 w-6 ${i < selectedFeedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                      }`}
                   />
                 ))}
                 <span className="text-lg font-semibold text-gray-900 ml-2">
@@ -321,7 +305,7 @@ export default function FeedbackManagement() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }

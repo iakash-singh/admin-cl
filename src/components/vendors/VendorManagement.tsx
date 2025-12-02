@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Store, CheckCircle, Clock, XCircle, TrendingUp, Package, DollarSign, Star } from 'lucide-react';
+import { Store, CheckCircle, Clock, XCircle, TrendingUp, Package, DollarSign, Star, X } from 'lucide-react';
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
 import { mockVendors } from '../../data/mockData';
 import { Vendor } from '../../types';
+import { createPortal } from 'react-dom';
 
 import { createPortal } from 'react-dom';
 import { supabase } from '../../services/supabaseClient.ts';
@@ -367,7 +368,7 @@ export default function VendorManagement() {
       />
 
       {/* Vendor Detail Modal */}
-      {selectedVendor && (
+      {selectedVendor && createPortal((
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
@@ -377,11 +378,11 @@ export default function VendorManagement() {
                   onClick={() => setSelectedVendor(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  ×
+                  <X />
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6 space-y-6">
               <div className="flex items-start space-x-6">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
@@ -391,11 +392,10 @@ export default function VendorManagement() {
                   <h4 className="text-lg font-semibold text-gray-900">{selectedVendor.businessName}</h4>
                   <p className="text-sm text-gray-500 mb-2">{selectedVendor.ownerName}</p>
                   <div className="flex items-center space-x-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      selectedVendor.verificationStatus === 'verified' ? 'bg-green-100 text-green-800' :
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selectedVendor.verificationStatus === 'verified' ? 'bg-green-100 text-green-800' :
                       selectedVendor.verificationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
+                        'bg-red-100 text-red-800'
+                      }`}>
                       {selectedVendor.verificationStatus.charAt(0).toUpperCase() + selectedVendor.verificationStatus.slice(1)}
                     </span>
                     <div className="flex items-center">
@@ -485,7 +485,7 @@ export default function VendorManagement() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 }
