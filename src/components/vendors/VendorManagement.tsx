@@ -5,64 +5,159 @@ import StatCard from '../shared/StatCard';
 import { mockVendors } from '../../data/mockData';
 import { Vendor } from '../../types';
 
+import { createPortal } from 'react-dom';
+import { supabase } from '../../services/supabaseClient.ts';
+
 export default function VendorManagement() {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [totalVendors, setTotalVendors] = useState(0);
-  const [approvedVendors, setApprovedVendors] = useState(0);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
   const [avgRevenue, setAvgRevenue] = useState(0);
   const [verificationStatus, setVerificationStatus] = useState({ verified: 0, pending: 0, rejected: 0 });
   const [onboardingStatus, setOnboardingStatus] = useState({ completed: 0, pending: 0, incomplete: 0 });
-  const [allVendors, setAllVendors] = useState<Vendor[]>([]);
+  const [allVendors, setAllVendors] = useState<any[]>([]);
   // const { vendors } = mockAnalytics;
+  // 
+  const fetchTotalVendors = async () => {
+    const { data, error } = await supabase
+      .from('vendorsData')
+      .select('*', { count: 'exact' });
+    if (error) {
+      console.error('Error fetching total vendors:', error);
+      return;
+    }
+    setTotalVendors(data?.length || 0);
+  };
+
+  const fetchPendingApprovals = async () => {
+    const { data, error } = await supabase
+      .from('vendorsData')
+      .select('*', { count: 'exact' })
+      .eq('verification', 'pending');
+    if (error) {
+      console.error('Error fetching pending approvals:', error);
+      return;
+    }
+    setPendingApprovals(data?.length || 0);
+  };
+
+  const fetchAvgRevenue = async () => {
+    const { data, error } = await supabase
+      .from('vendorsData')
+      .select('revenue');
+    if (error) {
+      console.error('Error fetching average revenue:', error);
+      return;
+    }
+    const totalRevenue = data?.reduce((sum, vendor) => sum + (vendor.revenue || 0), 0) || 0;
+    const average = data && data.length > 0 ? totalRevenue / data.length : 0;
+    setAvgRevenue(average);
+  };
+
+  const fetchVerificationStatus = async () => {
+    const { data, error } = await supabase
+      .from('vendorsData')
+      .select('verification');
+    if (error) {
+      console.error('Error fetching verification status:', error);
+      return;
+    }
+    const statusCount = { verified: 0, pending: 0, rejected: 0 };
+    data?.forEach(vendor => {
+      if (vendor.verification === 'verified') statusCount.verified += 1;
+      else if (vendor.verification === 'pending') statusCount.pending += 1;
+      else if (vendor.verification === 'rejected') statusCount.rejected += 1;
+    });
+    setVerificationStatus(statusCount);
+  };
+
+  const fetchOnboardingStatus = async () => {
+    const { data, error } = await supabase
+      .from('vendorsData')
+      .select('onboarding');
+    if (error) {
+      console.error('Error fetching onboarding status:', error);
+      return;
+    }
+    const statusCount = { completed: 0, pending: 0, incomplete: 0 };
+    data?.forEach(vendor => {
+      if (vendor.onboarding === 'completed') statusCount.completed += 1;
+      else if (vendor.onboarding === 'pending_review') statusCount.pending += 1;
+      else if (vendor.onboarding === 'incomplete') statusCount.incomplete += 1;
+    });
+    setOnboardingStatus(statusCount);
+  };
+
+  const fetchAllVendors = async () => {
+    const { data, error } = await supabase
+      .from('vendorsData')
+      .select('*');
+    if (error) {
+      console.error('Error fetching all vendors:', error);
+      return;
+    }
+    const formatted = (data ?? []).map((v) => ({
+      id: v.vendors_id,
+      buisnessName: v.business_name || "",
+      ownerName: v.owner || "",
+      category: v.category || "",
+      verificationStatus: v.verification || "",
+      onboardingStatus: v.onboarding || "",
+      products: v.products || 0,
+      rating: v.rating || 0,
+      revenue: v.revenue || 0,
+    }));
+    setAllVendors(formatted);
+  };
+
+  const fetchVendorDetailsbyId = async (id: number) => {
+    const { data, error } = await supabase
+      .from('vendorsData')
+      .select('vendors_id, business_name, owner, category, verification, onboarding, products, rating, revenue, location, created_at, email, phone, orders')
+      .eq('vendors_id', id)
+      .single();
+    if (error || !data) {
+      console.error('Error fetching vendor details:', error);
+      return null;
+    }
+
+    const vendorData = {
+      id: data.vendors_id,
+      businessName: data.business_name,
+      ownerName: data.owner,
+      category: data.category,
+      verificationStatus: data.verification,
+      onboardingStatus: data.onboarding,
+      totalProducts: data.products,
+      rating: data.rating,
+      revenue: data.revenue,
+      location: data.location,
+      businessType: data.category,
+      email: data.email,
+      phone: data.phone,
+      address: data.location,
+      totalOrders: data.orders,
+      registrationDate: data.created_at || new Date().toISOString(),
+      commission: 0,
+      documentsSubmitted: true
+    };
+    setSelectedVendor(vendorData);
+  };
+
   useEffect(() => {
-    fetch("http://localhost:3000/api/vendors/total-vendors")
-      .then(res => res.json())
-      .then(data => setTotalVendors(data.totalVendors))
-      .catch(err => console.error('Error fetching total vendors:', err));
-
-      fetch("http://localhost:3000/api/vendors/pending-vendors")
-      .then(res => res.json())
-      .then(data => setApprovedVendors(data.pendingApprovals))
-      .catch(err => console.error('Error fetching total vendors:', err));
-
-      fetch("http://localhost:3000/api/vendors/avg-revenue")
-      .then(res => res.json())
-      .then(data => setAvgRevenue(data.averageRevenue))
-      .catch(err => console.error('Error fetching total vendors:', err));
-
-      fetch("http://localhost:3000/api/vendors/verification-status")
-      .then(res => res.json())
-      .then(data => setVerificationStatus(data))
-      .catch(err => console.error('Error fetching total vendors:', err));
-      
-      fetch("http://localhost:3000/api/vendors/onboarding-status")
-      .then(res => res.json())
-      .then(data => setOnboardingStatus(data))
-      .catch(err => console.error('Error fetching total vendors:', err));
-      
-      const fetchAllVendors = async () => {
-        try{
-          const res = await fetch("http://localhost:3000/api/vendors/all-vendors");
-          const data = await res.json()
-          setAllVendors(Array.isArray(data)? data : []);
-        }
-        catch(err){
-          console.error('Error fetching all vendors:', err);
-        }
-      }
-      fetchAllVendors();
+    fetchTotalVendors();
+    fetchPendingApprovals();
+    fetchAvgRevenue();
+    fetchVerificationStatus();
+    fetchOnboardingStatus();
+    fetchAllVendors();
   }, []);
 
-  const handleRowClick = async (vendor: any) => {
-    try{
-      const res = await fetch(`http://localhost:3000/api/vendors/:${vendor.id}`);
-      const data = await res.json();
-      setSelectedVendor(data);
-    }
-    catch(err){
-      console.error('Error fetching vendor details:', err);
-    }
-  };
+
+
+
+
+  
   const vendorColumns = [
     {
       key: 'buisnessName',
@@ -167,7 +262,7 @@ export default function VendorManagement() {
         />
         <StatCard
           title="Pending Approval"
-          value={approvedVendors}
+          value={pendingApprovals}
           icon={Clock}
           color="yellow"
         />
@@ -265,9 +360,10 @@ export default function VendorManagement() {
       {/* Vendors Table */}
       <DataTable
         // data={mockVendors}
-        data={Array.isArray(allVendors)? allVendors : []}
+        // data={Array.isArray(allVendors)? allVendors : []}
+        data = {allVendors}
         columns={vendorColumns}
-        onRowClick={handleRowClick}
+        onRowClick={(v)=> fetchVendorDetailsbyId(v.id)}
       />
 
       {/* Vendor Detail Modal */}

@@ -1,140 +1,147 @@
-type TopMarketLocation = {
-  city: string;
-  revenue: number;
-};
-type userVendorConcentartion = {
-  location: string;
-  userCount: number;
-  vendorCount: number;
-};
-type marketOpportunity = {
-  location: string;
-  userCount: number;
-  totalRevenue: number;
-};
-type marketPenetration = {
-  location: string;
-  userCount: number;
-};
-type revenueDistribution = {
-  location: string;
-  totalRevenue: number;
-};
+
 import { useState, useEffect } from 'react';
 import { MapPin, Users, Store, Package, DollarSign, TrendingUp } from 'lucide-react';
 import StatCard from '../shared/StatCard';
 import DataTable from '../shared/DataTable';
+
 import { mockLocations } from '../../data/mockData';
 import { Location } from '../../types';
 
-export default function LocationInsights() {
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [total_Users, setTotal_Users] = useState(0);
-  const [total_Vendors, setTotal_Vendors] = useState(0);
-  const [Avg_Order_Value, setAvg_Order_Value] = useState(0);
-  const [market_Coverage, setMarket_Coverage] = useState(0);
-  const [top_Market_by_User_Spend, setTop_Market_by_User_Spend] = useState<TopMarketLocation[]>([]);
-  const [userVendor_Concentration_by_Location, setUserVendor_Concentration_by_Location] = useState<userVendorConcentartion[]>([]);
-  const [market_Opportunity, setMarket_Opportunity] = useState<marketOpportunity[]>([]);
-  const [market_Penetration, setMarket_Penetration] = useState<marketPenetration[]>([]);
-  const [revenue_Distribution, setRevenue_Distribution] = useState<revenueDistribution[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
+import { supabase } from '../../services/supabaseClient';
 
-  //statcards
+type LocationStats = {
+  city: string;
+  userCount: number;
+  vendorCount: number;
+  orderCount: number;
+  revenue: number;
+  marketDensity: string;     // users/vendor
+  averageOrderValue: string; // $value
+};
+
+export default function LocationInsights() {
+  const [selectedLocation, setSelectedLocation] = useState<LocationStats | null>(null);
+  const [locations, setLocations] = useState<LocationStats[]>([]);
   const [totalusers, setTotalusers] = useState(0);
   const [totalVendors, setTotalVendors] = useState(0);
   const [avgOrderValue, setAvgOrderValue] = useState(0);
-  const [marketCoverage, setMarketCoverage] = useState(0);
+  const [marketCoverage, setMarketCoverage] = useState(0);  
   
-  
-  useEffect(()=>{
-    try{
-    fetch("http://localhost:3000/api/users/total-users")
-    .then((response) => response.json())
-    .then((data) => setTotal_Users(data.totalUsers))
-    .catch(error => console.error('Error fetching user growth data:', error));
+  const fetchAllLocations = async () => {
 
-    fetch("http://localhost:3000/api/vendors/total-vendors")
-    .then((response) => response.json())
-    .then((data) => setTotal_Vendors(data.totalVendors))
-    .catch(error => console.error('Error fetching user growth data:', error));
+      const { data:users } = await supabase
+        .from('users_info')
+        .select('id, location');
 
-    fetch("http://localhost:3000/api/orders/average-order-value")
-    .then((response) => response.json())
-    .then((data) => setAvg_Order_Value(data.averageOrderValue))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/orders/market-coverage")
-    .then((response) => response.json())
-    .then((data) => setMarket_Coverage(data.marketCoverage))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/users/top-market-by-user-spend")
-    .then((response) => response.json())
-    .then((data) => setTop_Market_by_User_Spend(data.topMarkets))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/users/user-and-vendor-concentration-by-location")
-    .then((response) => response.json())
-    .then((data) => setUserVendor_Concentration_by_Location(data.userandVendorConcentration))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/users/market-opportunity")
-    .then((response) => response.json())
-    .then((data) => setMarket_Opportunity(data.marketOpportunity))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/users/market-penetration")
-    .then((response) => response.json())
-    .then((data) => setMarket_Penetration(data.marketPenetration))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/users/revenue-distribution-by-location")
-    .then((response) => response.json())
-    .then((data) => setRevenue_Distribution(data.revenueDistribution))
-    .catch(error => console.error('Error fetching user growth data:', error));
+      const { data:vendors } = await supabase
+        .from('vendorsData')
+        .select('vendors_id, location');
 
-    const fetchall = async() =>{
-      const res = await fetch("http://localhost:3000/api/locations");
-      const data = await res.json();
-      const arr = Array.isArray(data) ? data: data.locations ?? [];
-      setLocations(arr);
+      const { data:orders } = await supabase
+        .from('orders')
+        .select('id, location, total_amount');
 
-      const totalUsersCount = data.reduce((sum: number, loc: any) => sum + loc.userCount, 0);
-      const totalVendorsCount = data.reduce((sum: number, loc: any) => sum + loc.vendorCount, 0);
-      const totalRevenue = data.reduce((sum: number, loc: any) => sum + loc.revenue, 0)
-      const totalOrders = data.reduce((sum: number, loc: any) => sum + loc.orderCount, 0);
+      const map: Record<string, LocationStats> = {};
 
-      setTotalusers(totalUsersCount);
-      setTotalVendors(totalVendorsCount);
-      setAvgOrderValue(totalOrders > 0 ? totalRevenue / totalOrders : 0);
-      setMarketCoverage(arr.length); // number of cities covered
+      users?.forEach((u)=>{
+        if(!u.location) return;
+        const loc = u.location.trim();
+        if(!map[loc])
+          map[loc] = {city: loc, userCount:0, vendorCount:0, orderCount:0, revenue:0, marketDensity:'', averageOrderValue:''};
+        map[loc].userCount +=1;
+      })
 
-    }
+      vendors?.forEach((v)=>{
+        if(!v.location) return;
+        const loc = v.location.trim();
+        if(!map[loc])
+          map[loc] = {city: loc, userCount:0, vendorCount:0, orderCount:0, revenue:0, marketDensity:'', averageOrderValue:''};
+        map[loc].vendorCount +=1;
+      })
+
+      orders?.forEach((o)=>{
+        if(!o.location) return;
+        const loc = o.location.trim();
+        if(!map[loc])
+          map[loc] = {city: loc, userCount:0, vendorCount:0, orderCount:0, revenue:0, marketDensity:'', averageOrderValue:''};
+        map[loc].orderCount +=1;
+        map[loc].revenue += Number(o.total_amount);
+      })
+
+      const finalList = Object.values(map).map((loc)=>({
+        city: loc.city,
+        userCount: loc.userCount ?? 0,
+        vendorCount: loc.vendorCount ?? 0,
+        orderCount: loc.orderCount ?? 0,
+        revenue: loc.revenue ?? 0,
+        marketDensity:
+          loc.vendorCount > 0
+            ? `${(loc.userCount / loc.vendorCount).toFixed(1)} `
+            : "N/A",
+        averageOrderValue:
+          loc.orderCount > 0
+            ? `$${(loc.revenue / loc.orderCount).toFixed(0)}`
+            : "$0",
+
+      }))
+      setLocations(finalList);
+      
+      const totalU = finalList.reduce((a:number, b:any)=> a + b.userCount, 0);
+      const totalV = finalList.reduce((a:number, b:any)=> a + b.vendorCount, 0);
+      const totalR = finalList.reduce((a:number, b:any)=> a + b.revenue, 0);
+      const totalO = finalList.reduce((a:number, b:any)=> a + b.orderCount, 0);
+      setTotalusers(totalU);
+      setTotalVendors(totalV);
+      setAvgOrderValue(totalO > 0 ? totalR / totalO : 0);
+      setMarketCoverage(finalList.length);
+      }
     
-    fetchall();
-    }
-    catch(err){
-      console.error("Error calculating totals:", err);
-    }
-    
-  }, [])
 
-  const handleRowClick = async (location: any) => {
-    try {
-      const res = await fetch(`http://localhost:3000/api/locations/${encodeURIComponent(location.city)}`);
-      const data = await res.json();
-      setSelectedLocation(data.location);
-    } catch (err) {
-      console.error("Error fetching location details:", err);
-    }
-  };
 
+
+  const handleRowClick = async (loc: any) => {
+    const city = loc.city;
+
+    const { data:users } = await supabase
+        .from('users_info')
+        .select('id, location')
+        .ilike('location', city);
+
+      const { data:vendors } = await supabase
+        .from('vendorsData')
+        .select('vendors_id, location')
+        .ilike('location', city);
+
+      const { data:orders } = await supabase
+        .from('orders')
+        .select('location, total_amount')
+        .ilike('location', city);
+        
+      const userCount = users?.length ?? 0;
+      const vendorCount = vendors?.length ?? 0;
+      const orderCount = orders?.length ?? 0;
+      const revenue = orders?.reduce((sum, order) => sum + Number(order.total_amount ?? 0), 0) ?? 0;
+
+      setSelectedLocation({
+        city,
+        userCount,
+        vendorCount,
+        orderCount,
+        revenue,
+        marketDensity: vendorCount > 0 ? `${(userCount / vendorCount).toFixed(1)}` + ' users/vendor' : 'N/A',
+        averageOrderValue: orderCount > 0 ? '$' + (revenue / orderCount).toFixed(0) : 'N/A',
+      });
+    };  
+
+
+  useEffect(() => {
+    fetchAllLocations();
+  }, []);
 
   // Calculate totals
-  const totalUsers = locations.reduce((sum, loc) => sum + (loc.userCount??0), 0);
+  // const totalUsers = locations.reduce((sum, loc) => sum + (loc.userCount??0), 0);
   // const totalVendors = mockLocations.reduce((sum, loc) => sum + loc.vendorCount, 0);
-  const totalRevenue = locations.reduce((sum, loc) => sum + (loc.revenue??0), 0);
+  // const totalRevenue = locations.reduce((sum, loc) => sum + (loc.revenue??0), 0);
   // const averageOrderValue = mockLocations.reduce((sum, loc) => sum + (loc.revenue / loc.orderCount), 0) / mockLocations.length;
 
   const locationColumns = [
@@ -196,12 +203,12 @@ export default function LocationInsights() {
     {
       key: 'marketDensity',
       label: 'Market Density',
-      render: (value: any, row: Location) => {
-        const density = row.userCount / row.vendorCount;
+      render: (value: string) => {
+
         return (
           <div className="flex items-center">
             <TrendingUp className="h-4 w-4 text-blue-600 mr-1" />
-            {density.toFixed(1)} users/vendor
+            {value} users/vendor
           </div>
         );
       }
@@ -209,10 +216,8 @@ export default function LocationInsights() {
     {
       key: 'avgOrderValue',
       label: 'Avg Order Value',
-      render: (value: any, row: Location) => {
-        const avg = row.revenue / row.orderCount;
-        return `$${avg.toFixed(0)}`;
-      }
+      render: (value: string) => value
+
     }
   ];
 
@@ -222,13 +227,13 @@ export default function LocationInsights() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Market Coverage"
-          value={market_Coverage}
+          value={marketCoverage}
           icon={MapPin}
           color="blue"
         />
         <StatCard
           title="Total Active Users"
-          value={total_Users.toLocaleString()}
+          value={totalusers.toLocaleString()}
           change={8.3}
           changeType="increase"
           icon={Users}
@@ -236,7 +241,7 @@ export default function LocationInsights() {
         />
         <StatCard
           title="Total Vendors"
-          value={total_Vendors.toLocaleString()}
+          value={totalVendors.toLocaleString()}
           change={12.1}
           changeType="increase"
           icon={Store}
@@ -244,7 +249,7 @@ export default function LocationInsights() {
         />
         <StatCard
           title="Average Order Value"
-          value={`$${Avg_Order_Value.toPrecision(4)}`}
+          value={`$${avgOrderValue.toPrecision(4)}`}
           change={5.7}
           changeType="increase"
           icon={DollarSign}
@@ -254,7 +259,7 @@ export default function LocationInsights() {
 
       {/* Market Performance Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Markets by Revenue</h3>
           <div className="space-y-3">
             {top_Market_by_User_Spend
@@ -267,20 +272,20 @@ export default function LocationInsights() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">{location.city}</p>
-                    {/* <p className="text-xs text-gray-500">{location.orderCount} orders</p> */}
+                    <p className="text-xs text-gray-500">{location.orderCount} orders</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900">${location.revenue.toLocaleString()}</p>
                     <p className="text-xs text-gray-500">
-                      {/* ${(location.revenue / location.orderCount).toFixed(0)} avg */}
+                      ${(location.revenue / location.orderCount).toFixed(0)} avg
                     </p>
                   </div>
                 </div>
               ))}
-          </div>
+          </div> */}
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">User Concentration</h3>
           <div className="space-y-3">
             {userVendor_Concentration_by_Location
@@ -304,9 +309,9 @@ export default function LocationInsights() {
                 </div>
               ))}
           </div>
-        </div>
+        </div> */}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Market Opportunity</h3>
           <div className="space-y-3">
             {market_Opportunity
@@ -333,10 +338,10 @@ export default function LocationInsights() {
               ))}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Geographic Distribution Chart */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Geographic Market Analysis</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
@@ -388,7 +393,7 @@ export default function LocationInsights() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Location Data Table */}
       <DataTable
@@ -499,7 +504,7 @@ export default function LocationInsights() {
                     <div className="p-3 bg-purple-50 rounded-lg">
                       <p className="text-sm font-medium text-purple-800">Market Share</p>
                       <p className="text-xs text-purple-600">
-                        {((selectedLocation.revenue / totalRevenue) * 100).toFixed(1)}% of total platform revenue
+                        {/* {((selectedLocation.revenue / totalRevenue) * 100).toFixed(1)}% of total platform revenue */}
                       </p>
                     </div>
                   </div>

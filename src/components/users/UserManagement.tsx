@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { User, UserPlus, Calendar, Shield } from 'lucide-react';
+
+import { supabase } from "../../services/supabaseClient.ts";
+import { User, UserPlus, Calendar, Shield, X } from 'lucide-react';
+
 import DataTable from '../shared/DataTable';
 import StatCard from '../shared/StatCard';
 import { mockAnalytics } from '../../data/mockData';
@@ -7,66 +10,201 @@ import { User as UserType } from '../../types';
 
 export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
-  const [totalUsers, setTotalUsers] = useState(null);
-  const [NewUsers, setNewUsers] = useState(null);
-  const [Users, setUsers] = useState({
+  const [totalUsers, setTotalUsers] = useState<number | null>(null);
+  const [newUsersToday, setNewUsersToday] = useState<number | null>(null);
+  const [growth, setGrowth] = useState({
     newUsersThisWeek: 0,
-    userGrowthRate: 0,
+    userGrowthRate: "0%",
     usersLastWeek: 0,
   });
   const [engagement, setEngagement] = useState({
-    cartAbondonmentRate: 0,
-    activeUserRate: 0,
+    cartAbandonmentRate: "0%",
+    activeUserRate: "0%",
   }); 
-  const [allUsers, setAllUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+
+  // Functions to fetch data
+  const fetchTotalUsers = async () => {
+    const {count} = await supabase
+      .from('Users')
+      .select('*', { count: 'exact', head: true });
+    setTotalUsers(count);
+  }
+
+  const fetchNewUsersToday = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const {count} = await supabase
+      .from('Users')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', today.toISOString());
+    setNewUsersToday(count);
+  };
+
+  const fetchGrowth = async () => {
+    const today = new Date();
+
+    const startOfThisWeek = new Date(today);
+    startOfThisWeek.setDate(today.getDate() - today.getDay() + 1);
+    startOfThisWeek.setHours(0, 0, 0, 0);
+
+    const startOfLastWeek = new Date(startOfThisWeek);
+    startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+
+    const endOfLastWeek = new Date(startOfThisWeek);
+    endOfLastWeek.setMilliseconds(-1);
+
+    const { count: thisWeek } = await supabase
+      .from("Users")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", startOfThisWeek.toISOString());
+
+    const { count: lastWeek } = await supabase
+      .from("Users")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", startOfLastWeek.toISOString())
+      .lte("created_at", endOfLastWeek.toISOString());
+
+    const growthRate =
+      lastWeek && lastWeek > 0
+        ? (((thisWeek ?? 0) - lastWeek) / lastWeek) * 100
+        : 0;
+
+    setGrowth({
+      newUsersThisWeek: thisWeek ?? 0,
+      usersLastWeek: lastWeek ?? 0,
+      userGrowthRate: `${growthRate.toFixed(2)}%`,
+    });
+  };
+
+  const fetchEngagement = async () => {
+    const { count: totalUsers } = await supabase
+      .from("Users")
+      .select("*", { count: "exact", head: true });
+
+    // Active users (last 30 days orders)
+    const last30 = new Date();
+    last30.setDate(last30.getDate() - 30);
+
+    const { data: activeOrders } = await supabase
+      .from("orders")
+      .select("user_id")
+      .gte("created_at", last30.toISOString());
+
+    const activeUserSet = new Set(activeOrders?.map((o) => o.user_id));
+    const activeUserRate =
+      totalUsers && totalUsers > 0
+        ? ((activeUserSet.size / totalUsers) * 100).toFixed(2)
+        : "0";
+
+    // Cart abandonment (pending orders)
+    const { count: totalOrders } = await supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true });
+
+    const { count: pendingOrders } = await supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending");
+
+    const cartRate =
+      totalOrders && totalOrders > 0
+        ? ((pendingOrders! / totalOrders) * 100).toFixed(2)
+        : "0";
+
+    setEngagement({
+      activeUserRate: `${activeUserRate}%`,
+      cartAbandonmentRate: `${cartRate}%`,
+    });
+  };
+
+  const fetchAllUsers = async () => {
+    const { data} = await supabase
+      .from('Users')
+      .select(`id,
+        name,
+        email,
+        role,
+        created_at,
+        status,
+        users_info (
+          avatar,
+          rentals,
+          total_spend
+        )`);
+      const formatted = (data ?? []).map((u)=>{
+        let info: any = {}
+
+        if(Array.isArray(u.users_info)){
+          info = u.users_info[0] ?? {};
+        }else if(u.users_info){
+          info = u.users_info;
+        }
+        return{
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          created_at: u.created_at,
+          status: u.status,
+          avatar: info.avatar ?? null,
+          rentals: info?.rentals ?? 0,
+          total_spend: info?.total_spend ?? 0,
+        }
+          
+      })
+      setAllUsers(formatted);
+  }
+
+  const fetchUserDetails = async(userId: number)=>{
+    const { data, error } = await supabase
+      .from('Users')
+      .select(`id,
+        name,
+        email,
+        role,
+        created_at,
+        status,
+        users_info (
+          avatar,
+          rentals,
+          total_spend,
+          location
+        )`)
+      .eq('id', userId)
+      .single();
+      if (error || !data) {
+      console.error("Failed to load user details:", error);
+      return;
+  }
+    
+      const info = Array.isArray(data.users_info) ? data.users_info[0] : data.users_info ?? {};
+
+      setSelectedUser({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        userType: data.role,
+        registrationDate: data.created_at,
+        status: data.status,
+        avatar: info.avatar ?? null,
+        totalRentals: info.rentals ?? 0,
+        totalSpent: info.total_spend ?? 0,
+        location: info.location ?? "-",
+        lastActive: data.created_at,
+      });
+  }
 
   const { users } = mockAnalytics;
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/users/total-users")
-    .then((response) => response.json())
-    .then((data) => setTotalUsers(data.totalUsers))
-    .catch(error => console.error('Error fetching total users:', error));
-    
-    fetch("http://localhost:3000/api/users/new-today")
-    .then((response) => response.json())
-    .then((data) => setNewUsers(data.newUsersToday))
-    .catch(error => console.error('Error fetching total users:', error));
+    fetchTotalUsers();
+    fetchNewUsersToday();
+    fetchGrowth();
+    fetchEngagement();
+    fetchAllUsers();
+  },[])
   
-    fetch("http://localhost:3000/api/users/growth")
-    .then((response) => response.json())
-    .then((data) => setUsers(data))
-    .catch(error => console.error('Error fetching user growth data:', error));
-
-    fetch("http://localhost:3000/api/users/engagement")
-    .then((response) => response.json())
-    .then((data) => setEngagement(data))
-    .catch(error => console.error('Error fetching user engagement data:', error));
-
-    const fetchUsers = async () => {
-      try{
-        const res = await fetch("http://localhost:3000/api/users/users");
-        const data = await res.json();
-        setAllUsers(data);
-      }
-      catch(err){
-        console.error('Error fetching all users:', err);
-      }
-    }
-    fetchUsers();
-  }, []);
-
-  const handleRowClick = async (user:any) => {
-    try{
-      const res = await fetch(`http://localhost:3000/api/users/${user.id}`);
-      const data = await res.json();
-      setSelectedUser(data);
-    }
-    catch(err){
-      console.error('Error fetching user details:', err);
-    }
-  }
-
   const userColumns = [
     {
       key: 'avatar',
@@ -152,7 +290,7 @@ export default function UserManagement() {
         />
         <StatCard
           title="New Users Today"
-          value={NewUsers ?? "Loading..."}
+          value={newUsersToday ?? "Loading..."}
           icon={UserPlus}
           color="green"
         />
@@ -181,18 +319,18 @@ export default function UserManagement() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">This Week</span>
-              <span className="text-sm font-medium text-gray-900">{Users.newUsersThisWeek}</span>
+              <span className="text-sm font-medium text-gray-900">{growth.newUsersThisWeek}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Last Week</span>
-              <span className="text-sm font-medium text-gray-900">{Users.usersLastWeek}</span>
+              <span className="text-sm font-medium text-gray-900">{growth.usersLastWeek}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Growth Rate</span>
-              <span className="text-sm font-medium text-emerald-600">+{Users.userGrowthRate}</span>
+              <span className="text-sm font-medium text-emerald-600">+{growth.userGrowthRate}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Users.userGrowthRate}` }}></div>
+              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${growth.userGrowthRate}` }}></div>
             </div>
           </div>
         </div>
@@ -206,7 +344,7 @@ export default function UserManagement() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Cart Abandonment</span>
-              <span className="text-sm font-medium text-red-600">{engagement.cartAbondonmentRate}</span>
+              <span className="text-sm font-medium text-red-600">{engagement.cartAbandonmentRate}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(engagement.activeUserRate)}` }}></div>
@@ -240,7 +378,7 @@ export default function UserManagement() {
       <DataTable
         data={Array.isArray(allUsers)? allUsers : []}
         columns={userColumns}
-        onRowClick={handleRowClick}
+        onRowClick={(u)=>fetchUserDetails(u.id)}
       />
 
       {/* User Detail Modal */}
@@ -281,8 +419,16 @@ export default function UserManagement() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-4">
+
+              <div className="p-6 space-y-6">
+                <div className="flex items-center space-x-4">
+                  {/* {selectedUser.avatar ? (
+                    <img src={selectedUser.avatar} alt={selectedUser.name} className="w-16 h-16 rounded-full" />
+                  ) : (
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="h-8 w-8 text-blue-600" />
+                    </div>
+                  )} */}
                   <div>
                     <label className="text-sm font-medium text-gray-500">User Type</label>
                     <p className="text-sm text-gray-900 capitalize">{selectedUser.userType}</p>

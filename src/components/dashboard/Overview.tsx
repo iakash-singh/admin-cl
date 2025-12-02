@@ -1,51 +1,115 @@
 import { Users, Store, Package, DollarSign, Calendar } from 'lucide-react';
 import StatCard from '../shared/StatCard';
 import { mockAnalytics } from '../../data/mockData';
+import { supabase } from '../../services/supabaseClient.ts';
 import { useEffect, useState } from 'react';
 
 export default function Overview() {
-  const { users, vendors, orders } = mockAnalytics;
-  const [totalUsers, setTotalUsers] = useState(null);
-  const [NewUsers, setNewUsers] = useState(null);
-  const [totalVendors, setTotalVendors] = useState(null);
-  const [totalOrders, setTotalOrders] = useState(null);
+  const { users, vendors } = mockAnalytics;
 
-  const [Orders, setOrders] = useState({
+  const [totalUsers, setTotalUsers] = useState<number | null>(null);
+  const [NewUsersToday, setNewUsersToday] = useState<number | null>(null);
+  const [totalVendors, setTotalVendors] = useState<number | null>(null);
+  const [totalOrders, setTotalOrders] = useState<number | null>(null);
+  const [revenueThisMonth, setRevenueThisMonth] = useState<number>(0);
+
+  const [OrderStats, setOrderStats] = useState({
     activeOrders: 0,
     pendingOrders: 0,
     disputedOrders: 0,
     completedOrders: 0,
-    totalOrders: 1,
+    totalOrders: 0,
   });
 
-  useEffect(() => {
-    fetch("http://localhost:3000/api/users/total-users")
-    .then((response) => response.json())
-    .then((data) => setTotalUsers(data.totalUsers))
-    .catch(error => console.error('Error fetching total users:', error));
-    
-    fetch("http://localhost:3000/api/users/new-today")
-    .then((response) => response.json())
-    .then((data) => setNewUsers(data.newUsersToday))
-    .catch(error => console.error('Error fetching total users:', error));
-
-    fetch("http://localhost:3000/api/vendors/total-vendors")
-    .then((response) => response.json())
-    .then((data) => setTotalVendors(data.totalVendors))
-    .catch(error => console.error('Error fetching total vendors:', error));
-
-    fetch("http://localhost:3000/api/orders/total-orders")
-    .then((response) => response.json())
-    .then((data) => setTotalOrders(data.totalOrders))
-    .catch(error => console.error('Error fetching total orders:', error));
-    
-    fetch("http://localhost:3000/api/orders/status-review")
-    .then((response) => response.json())
-    .then((data) => setOrders(data))
-    .catch(error => console.error('Error fetching total orders:', error));
-
-  },[])
   
+    const fetchTotalUsers = async () => {
+    const {count} = await supabase
+      .from('Users')
+      .select('*', { count: 'exact', head: true });
+    setTotalUsers(count);
+  }
+
+  const fetchNewUsersToday = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const { count } = await supabase
+      .from('Users')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', today.toISOString());
+    setNewUsersToday(count ?? 0);
+  }
+
+  const fetchTotalVendors = async () => {
+    const { count, error } = await supabase
+      .from('vendorsData')
+      .select('*', { count: 'exact', head: true });
+    if (error) {
+      console.error('Error fetching total vendors:', error);
+      return;
+    }
+
+    setTotalVendors(count ?? 0);
+  };
+
+  const fetchTotalOrders = async () => {
+    const { count, error } = await supabase
+      .from('orders_info')
+      .select('*', { count: 'exact', head: true });
+    if (error) {
+      console.error('Error fetching total orders:', error);
+      return;
+    }
+    setTotalOrders(count ?? 0);
+  };
+  const fetchOrderStatusStats = async () => {
+    const { data, error } = await supabase
+      .from('orders_info')
+      .select('status');
+      if (error || !data) return;
+
+    const counts = data.reduce((acc, o) => {
+      const s = (o.status || "").toLowerCase();
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+  const total = data.length;
+    setOrderStats({
+      activeOrders: counts['active'] ?? 0,
+      pendingOrders: counts['pending'] ?? 0,
+      disputedOrders: counts['disputed'] ?? 0,
+      completedOrders: counts['completed'] ?? 0,
+      totalOrders: total,
+    });
+  }
+
+  const fetchRevenueThisMonth = async () => {
+    const start = new Date();
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+
+    const {data} = await supabase
+      .from('orders')
+      .select('total_amount, created_at')
+      .gte('created_at', start.toISOString());
+
+    const sum = data?.reduce((acc, order) => acc + (order.total_amount || 0), 0) || 0;
+    setRevenueThisMonth(sum);
+  };
+
+  useEffect(() => {
+    fetchTotalUsers();
+    fetchNewUsersToday();
+    fetchTotalVendors();
+    fetchTotalOrders();
+    fetchOrderStatusStats();
+    fetchRevenueThisMonth();
+  }, []);
+
+
+
+
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
@@ -76,7 +140,7 @@ export default function Overview() {
         />
         <StatCard
           title="Monthly Revenue"
-          value={`$${orders.revenueThisMonth.toLocaleString()}`}
+          value={`${revenueThisMonth.toLocaleString()}`}
           change={12.3}
           changeType="increase"
           icon={DollarSign}
@@ -88,8 +152,9 @@ export default function Overview() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           title="New Users Today"
-          value={NewUsers ?? "Loading"}
+          value={NewUsersToday ?? "Loading"}
           icon={Calendar}
+
           color="blue"
         />
         {/* <StatCard
@@ -109,40 +174,41 @@ export default function Overview() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Status Overview</h3>
           <div className="space-y-4">
+        
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Active Orders</span>
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(Orders.activeOrders / Orders.totalOrders)*100}` }}></div>
+                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(OrderStats.activeOrders / OrderStats.totalOrders)*100}` }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{Orders.activeOrders}</span>
+                <span className="text-sm font-medium text-gray-900">{OrderStats.activeOrders}</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Pending Orders</span>
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${(Orders.pendingOrders / Orders.totalOrders)*100}` }}></div>
+                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${(OrderStats.pendingOrders / OrderStats.totalOrders)*100}` }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{Orders.pendingOrders}</span>
+                <span className="text-sm font-medium text-gray-900">{OrderStats.pendingOrders}</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Disputed Orders</span>
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                  <div className="bg-red-500 h-2 rounded-full" style={{ width: `${(Orders.disputedOrders / Orders.totalOrders)*100}` }}></div>
+                  <div className="bg-red-500 h-2 rounded-full" style={{ width: `${(OrderStats.disputedOrders / OrderStats.totalOrders)*100}` }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{Orders.disputedOrders}</span>
+                <span className="text-sm font-medium text-gray-900">{OrderStats.disputedOrders}</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Completed Orders</span>
               <div className="flex items-center">
                 <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(Orders.completedOrders / Orders.totalOrders)*100}` }}></div>
+                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(OrderStats.completedOrders / OrderStats.totalOrders)*100}` }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{Orders.completedOrders}</span>
+                <span className="text-sm font-medium text-gray-900">{OrderStats.completedOrders}</span>
               </div>
             </div>
           </div>

@@ -13,10 +13,13 @@ import { TrendingUp, Users, DollarSign, Package, MapPin, Calendar, Star, Shoppin
 import StatCard from '../shared/StatCard';
 import { mockAnalytics } from '../../data/mockData';
 import { useEffect, useState } from 'react';
+import { supabase } from '../../services/supabaseClient';
 
 export default function Analytics() {
-  const { users, vendors, products } = mockAnalytics;
-  const [userMetrics, setUserMetrics] = useState({usersLastWeek:0, usersThisWeek:0, userGrowthRate:0});
+  const {products } = mockAnalytics;
+  const [userGrowth, setUserGrowth] = useState(0);
+  const [usersLastWeek, setUsersLastWeek] = useState(0);
+  const [usersThisWeek, setUsersThisWeek] = useState(0);
   const [conversionRate, setConversionRate] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
   const [newUsersToday, setNewUsersToday] = useState(0);
@@ -24,59 +27,164 @@ export default function Analytics() {
   const [averageRevenue, setAverageRevenue] = useState(0);
   const [topLocations, setTopLocations] = useState<TopLocation[]>([]);
   const [topVendorLocations, setTopVendorLocations] = useState<TopVendorLocation[]>([]);
-  useEffect(() => {
-    try{
-      fetch("http://localhost:3000/api/users/growth")
-    .then((response) => response.json())
-    .then((data) => setUserMetrics(data))
-    .catch(error => console.error('Error fetching user growth data:', error));
-
-    fetch("http://localhost:3000/api/users/conversion-rate")
-    .then((response) => response.json())
-    .then((data) => setConversionRate(data.conversionRate))
-    .catch(error => console.error('Error fetching user growth data:', error));
-      
-    fetch("http://localhost:3000/api/users/total-users")
-    .then((response) => response.json())
-    .then((data) => setTotalUsers(data.totalUsers))
-    .catch(error => console.error('Error fetching user growth data:', error));
     
-    fetch("http://localhost:3000/api/users/new-today")
-    .then((response) => response.json())
-    .then((data) => setNewUsersToday(data.newUsersToday))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/vendors/total-vendors")
-    .then((response) => response.json())
-    .then((data) => setTotalVendors(data.totalVendors))
-    .catch(error => console.error('Error fetching user growth data:', error));
+  const fetchUserGrowth = async() =>{
+    const today = new Date();
+    const sevenDaysAgo = new Date();
+    const fourteenDaysAgo = new Date();
 
-    fetch("http://localhost:3000/api/vendors/avg-revenue")
-    .then((response) => response.json())
-    .then((data) => setAverageRevenue(data.averageRevenue))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/users/top-locations")
-    .then((response) => response.json())
-    .then((data) => setTopLocations(data.topLocations))
-    .catch(error => console.error('Error fetching user growth data:', error));
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    fourteenDaysAgo.setDate(today.getDate() - 14);
 
-    fetch("http://localhost:3000/api/vendors/top-vendor-locations")
-    .then((response) => response.json())
-    .then((data) => setTopVendorLocations(data.topLocations))
-    .catch(error => console.error('Error fetching user growth data:', error));
+    const { data: usersThisWeekData } = await supabase
+    .from('users_info')
+    .select('id')
+    .gte('created_at', sevenDaysAgo.toISOString())
+
+    const { data: usersLastWeekData } = await supabase
+    .from('users_info')
+    .select('id')
+    .gte('created_at', fourteenDaysAgo.toISOString())
+    .lt('created_at', sevenDaysAgo.toISOString())
+
+    const usersThisWeekCount = usersThisWeekData?.length ?? 0;
+    const usersLastWeekCount = usersLastWeekData?.length ?? 0;
+
+    const growth = usersLastWeekCount === 0 ? usersThisWeekCount * 100 : ((usersThisWeekCount - usersLastWeekCount) / usersLastWeekCount) * 100;
+
+    setUsersThisWeek(usersThisWeekCount);
+    setUsersLastWeek(usersLastWeekCount);
+    setUserGrowth(Number(growth.toFixed(1)));
   }
-    catch(error){
-      console.error('Error in useEffect:', error);
-    }
-  },[])
+
+  const fetchTotalUsers = async() =>{
+    const {count} = await supabase
+    .from('users_info')
+    .select('*', { count: 'exact', head: true });
+    setTotalUsers(count ?? 0);
+  }
+
+  const fetchNewUsersToday = async() =>{
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const { data } = await supabase
+    .from('users_info')
+    .select('id')
+    .gte('created_at', today.toISOString())
+    setNewUsersToday(data?.length ?? 0);
+  }
+
+  const fetchConversionRate = async() =>{
+    const { count: orders } = await supabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true });
+
+    const { count: users } = await supabase
+    .from('users_info')
+    .select('*', { count: 'exact', head: true });
+
+    if(!users || users === 0){
+      setConversionRate(0);
+  }
+    setConversionRate(((orders ?? 0)/ (users ?? 1) * 100));
+  } 
+
+  const fetchVendorStats = async() =>{
+    const { count } = await supabase
+    .from('vendorsData')
+    .select('*', { count: 'exact', head: true });
+    setTotalVendors(count ?? 0);
+  }
+
+  const fetchAverageVendorRevenue = async() =>{
+    const { data } = await supabase
+    .from('vendorsData')
+    .select('revenue');
+    const totalRevenue = data?.reduce((sum, vendor) => sum + (vendor.revenue || 0), 0) ?? 0;
+    const avgRevenue = data && data.length > 0 ? totalRevenue / data.length : 0;
+    setAverageRevenue(Number(avgRevenue.toFixed(2)));
+  }
+  const fetchTopUserLocations = async() =>{
+    const {data: users} = await supabase
+    .from('users_info')
+    .select('location')
+
+    const {data: orders} = await supabase
+    .from('orders_info')
+    .select('location, amount')
+
+    const map: Record<string, TopLocation> = {};
+    
+    users?.forEach((u) => {
+      const loc = u.location?.trim()
+      if(!loc) return;
+      if(!map[loc]){
+        map[loc] = { city: loc, userCount: 0, revenue: 0 };
+      }
+      map[loc].userCount += 1;
+    })
+
+    orders?.forEach((o) => {
+      const loc = o.location?.trim()
+      if(!loc) return;
+      if(!map[loc]){
+        map[loc] = { city: loc, userCount: 0, revenue: 0 };
+      }
+      map[loc].revenue += o.amount || 0;
+    })
+
+    setTopLocations(Object.values(map).sort((a,b) => b.revenue - a.revenue));
+
+  }
+
+  const fetchTopVendorLocations = async() =>{ 
+    const {data: vendors} = await supabase
+    .from('vendorsData')
+    .select('location')
+
+    const {data: users} = await supabase
+    .from('users_info')
+    .select('location')
+    const map: Record<string, TopVendorLocation> = {};
+
+    vendors?.forEach((v) => {
+      const loc = v.location?.trim()
+      if(!loc) return;
+      if(!map[loc]){
+        map[loc] = { location: loc, vendorCount: 0, userCount: 0 };
+      }
+      map[loc].vendorCount += 1;
+    })
+
+    users?.forEach((u) => {
+      const loc = u.location?.trim()
+      if(!loc) return;
+      if(!map[loc]){
+        map[loc] = { location: loc, vendorCount: 0, userCount: 0 };
+      }
+      map[loc].userCount += 1;
+    })
+
+    setTopVendorLocations(Object.values(map).sort((a,b) => b.vendorCount - a.vendorCount));
+  }
+  useEffect(() => {
+    fetchUserGrowth();
+    fetchTotalUsers();
+    fetchNewUsersToday();
+    fetchConversionRate();
+    fetchVendorStats();
+    fetchAverageVendorRevenue();
+    fetchTopUserLocations();
+    fetchTopVendorLocations();
+   }, [])
+
   return (
     <div className="space-y-6">
       {/* Key Performance Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="User Growth Rate"
-          value={`${userMetrics.userGrowthRate}`}
+          value={`${userGrowth}%`}
           // change={users.userGrowthRate}
           changeType="increase"
           icon={TrendingUp}
@@ -84,21 +192,21 @@ export default function Analytics() {
         />
         <StatCard
           title="Conversion Rate"
-          value={`${conversionRate}`}
+          value={`${conversionRate.toFixed(1)}%`}
           // change={2.1}
           changeType="increase"
           icon={ShoppingCart}
           color="blue"
         />
-        {/* <StatCard
-          title="Monthly Revenue"
-          value={`$${orders.revenueThisMonth.toLocaleString()}`}
-          change={15.7}
+         <StatCard
+          title="Average Revenue"
+          value={`$${averageRevenue.toLocaleString()}`}
+          // change={15.7}
           changeType="increase"
           icon={DollarSign}
           color="green"
         />
-        <StatCard
+        {/*<StatCard
           title="Inventory Efficiency"
           value={`${vendors.inventoryEfficiency}%`}
           change={3.1}
@@ -120,7 +228,7 @@ export default function Analytics() {
                   <span className="ml-2 text-sm font-medium text-gray-900">Total Users</span>
                 </div>
                 <p className="text-2xl font-bold text-blue-600 mt-1">{totalUsers.toLocaleString()}</p>
-                <p className="text-xs text-gray-500 mt-1">+{userMetrics.toLocaleString()}% growth</p>
+                <p className="text-xs text-gray-500 mt-1">+{userGrowth.toLocaleString()}% growth</p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center">
@@ -128,33 +236,33 @@ export default function Analytics() {
                   <span className="ml-2 text-sm font-medium text-gray-900">New Today</span>
                 </div>
                 <p className="text-2xl font-bold text-green-600 mt-1">{newUsersToday}</p>
-                <p className="text-xs text-gray-500 mt-1">{userMetrics.usersThisWeek || 0 } this week</p>
+                <p className="text-xs text-gray-500 mt-1">{usersThisWeek || 0 } this week</p>
               </div>
             </div>
             
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Conversion Rate</span>
-                <span className="text-sm font-medium text-green-600">{conversionRate}</span>
+                <span className="text-sm font-medium text-green-600">{conversionRate.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${conversionRate}` }}></div>
+                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${conversionRate.toFixed(1)}%` }}></div>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Cart Abandonment</span>
-                <span className="text-sm font-medium text-red-600">{users.cartAbandonmentRate}%</span>
+                {/* <span className="text-sm font-medium text-red-600">{users.cartAbandonmentRate}%</span> */}
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: `${users.cartAbandonmentRate}%` }}></div>
+                {/* <div className="bg-red-500 h-2 rounded-full" style={{ width: `${users.cartAbandonmentRate}%` }}></div> */}
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Retention Rate</span>
-                <span className="text-sm font-medium text-blue-600">{users.retentionRate}%</span>
+                {/* <span className="text-sm font-medium text-blue-600">{users.retentionRate}%</span> */}
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${users.retentionRate}%` }}></div>
+                {/* <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${users.retentionRate}%` }}></div> */}
               </div>
             </div>
           </div>
@@ -170,7 +278,7 @@ export default function Analytics() {
                   <span className="ml-2 text-sm font-medium text-gray-900">Total Vendors</span>
                 </div>
                 <p className="text-2xl font-bold text-purple-600 mt-1">{totalVendors}</p>
-                <p className="text-xs text-gray-500 mt-1">{vendors.pendingApproval} pending</p>
+                {/* <p className="text-xs text-gray-500 mt-1">{} pending</p> */}
               </div>
               <div className="bg-yellow-50 p-4 rounded-lg">
                 <div className="flex items-center">
@@ -185,18 +293,18 @@ export default function Analytics() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Onboarding Drop-off</span>
-                <span className="text-sm font-medium text-red-600">{vendors.onboardingDropoff}%</span>
+                {/* <span className="text-sm font-medium text-red-600">{vendors.onboardingDropoff}%</span> */}
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: `${vendors.onboardingDropoff}%` }}></div>
+                {/* <div className="bg-red-500 h-2 rounded-full" style={{ width: `${vendors.onboardingDropoff}%` }}></div> */}
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Inventory Efficiency</span>
-                <span className="text-sm font-medium text-purple-600">{vendors.inventoryEfficiency}%</span>
+                {/* <span className="text-sm font-medium text-purple-600">{vendors.inventoryEfficiency}%</span> */}
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${vendors.inventoryEfficiency}%` }}></div>
+                {/* <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${vendors.inventoryEfficiency}%` }}></div> */}
               </div>
             </div>
           </div>
