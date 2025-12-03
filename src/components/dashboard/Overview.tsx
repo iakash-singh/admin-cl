@@ -110,6 +110,42 @@ export default function Overview() {
 
 
 
+  const [Orders, setOrders] = useState({
+    activeOrders: 0,
+    pendingOrders: 0,
+    disputedOrders: 0,
+    completedOrders: 0,
+    totalOrders: 1,
+  });
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/users/total-users")
+    .then((response) => response.json())
+    .then((data) => setTotalUsers(data.totalUsers))
+    .catch(error => console.error('Error fetching total users:', error));
+    
+    fetch("http://localhost:3000/api/users/new-today")
+    .then((response) => response.json())
+    .then((data) => setNewUsers(data.newUsersToday))
+    .catch(error => console.error('Error fetching total users:', error));
+
+    fetch("http://localhost:3000/api/vendors/total-vendors")
+    .then((response) => response.json())
+    .then((data) => setTotalVendors(data.totalVendors))
+    .catch(error => console.error('Error fetching total vendors:', error));
+
+    fetch("http://localhost:3000/api/orders/total-orders")
+    .then((response) => response.json())
+    .then((data) => setTotalOrders(data.totalOrders))
+    .catch(error => console.error('Error fetching total orders:', error));
+    
+    fetch("http://localhost:3000/api/orders/status-review")
+    .then((response) => response.json())
+    .then((data) => setOrders(data))
+    .catch(error => console.error('Error fetching total orders:', error));
+
+  },[])
+  
   return (
     <div className="space-y-6">
       {/* Key Metrics */}

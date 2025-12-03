@@ -130,6 +130,58 @@ export default function OrderManagement() {
   ? orders
   : orders.filter(order => order.status === filterStatus);
 
+
+  useEffect(() => {
+    try{
+      fetch('http://localhost:3000/api/orders/total-orders')
+      .then(response => response.json())
+      .then(data => setTotalOrders(data.totalOrders))
+      .catch(error => console.error('Error fetching total orders:', error));
+
+      fetch('http://localhost:3000/api/orders/status-review')
+      .then(response => response.json())
+      .then(data => setOrderStatus(data))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/active-orders')
+      .then(response => response.json())
+      .then(data => setActiveOrders(data.activeOrders))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/completed-orders')
+      .then(response => response.json())
+      .then(data => setCompletedOrders(data.completedOrders))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/total-revenue')
+      .then(response => response.json())
+      .then(data => setTotalRevenue(data.totalRevenue))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/today-revenue')
+      .then(response => response.json())
+      .then(data => setTodayRevenue(data.todayRevenue))
+      .catch(error => console.error('Error fetching total orders:', error));
+
+      fetch('http://localhost:3000/api/orders/average-order-value')
+      .then(response => response.json())
+      .then(data => setAverageOrderValue(data.averageOrderValue))
+      .catch(error => console.error('Error fetching total orders:', error));
+
+      fetch('http://localhost:3000/api/orders/order-success-rate')
+      .then(response => response.json())
+      .then(data => setOrderSuccessRate(data.orderSuccessRate))
+      .catch(error => console.error('Error fetching total orders:', error));
+      
+      fetch('http://localhost:3000/api/orders/all-orders')
+      .then(response => response.json())
+      .then(data => {setAllOrders(data.orders)})
+      .catch(error => console.error('Error fetching all orders:', error));
+    }
+    catch(err){
+      console.error('Unexpected error:', err);
+    }
+  }, [])
   const orderColumns = [
     {
       key: 'id',
@@ -296,7 +348,7 @@ export default function OrderManagement() {
         </div>
 
         <DataTable
-          data={filteredOrders}
+          data={allOrders}
           columns={orderColumns}
           onRowClick={(row: OrderRow) => setSelectedOrder(row)}
         />
@@ -318,7 +370,7 @@ export default function OrderManagement() {
                   onClick={() => setSelectedOrder(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <X />
+                  
                 </button>
               </div>
             </div>
