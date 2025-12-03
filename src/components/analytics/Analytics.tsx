@@ -178,45 +178,6 @@ export default function Analytics() {
     fetchTopVendorLocations();
    }, [])
 
-    fetch("http://localhost:3000/api/users/conversion-rate")
-    .then((response) => response.json())
-    .then((data) => setConversionRate(data.conversionRate))
-    .catch(error => console.error('Error fetching user growth data:', error));
-      
-    fetch("http://localhost:3000/api/users/total-users")
-    .then((response) => response.json())
-    .then((data) => setTotalUsers(data.totalUsers))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/users/new-today")
-    .then((response) => response.json())
-    .then((data) => setNewUsersToday(data.newUsersToday))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/vendors/total-vendors")
-    .then((response) => response.json())
-    .then((data) => setTotalVendors(data.totalVendors))
-    .catch(error => console.error('Error fetching user growth data:', error));
-
-    fetch("http://localhost:3000/api/vendors/avg-revenue")
-    .then((response) => response.json())
-    .then((data) => setAverageRevenue(data.averageRevenue))
-    .catch(error => console.error('Error fetching user growth data:', error));
-    
-    fetch("http://localhost:3000/api/users/top-locations")
-    .then((response) => response.json())
-    .then((data) => setTopLocations(data.topLocations))
-    .catch(error => console.error('Error fetching user growth data:', error));
-
-    fetch("http://localhost:3000/api/vendors/top-vendor-locations")
-    .then((response) => response.json())
-    .then((data) => setTopVendorLocations(data.topLocations))
-    .catch(error => console.error('Error fetching user growth data:', error));
-  }
-    catch(error){
-      console.error('Error in useEffect:', error);
-    }
-  },[])
   return (
     <div className="space-y-6">
       {/* Key Performance Indicators */}
