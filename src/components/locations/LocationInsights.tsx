@@ -272,17 +272,17 @@ export default function LocationInsights() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">{location.city}</p>
-                    {/* <p className="text-xs text-gray-500">{location.orderCount} orders</p> */}
+                    {/* <p className="text-xs text-gray-500">{location.orderCount} orders</p> 
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900">${location.revenue.toLocaleString()}</p>
                     <p className="text-xs text-gray-500">
-                      {/* ${(location.revenue / location.orderCount).toFixed(0)} avg */}
+                      {/* ${(location.revenue / location.orderCount).toFixed(0)} avg 
                     </p>
                   </div>
                 </div>
               ))}
-          </div> */}
+          </div>*/}
         </div>
 
         {/* <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
