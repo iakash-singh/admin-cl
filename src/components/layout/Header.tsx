@@ -1,32 +1,52 @@
-import React from 'react';
-import { Bell, Search, User, ChevronDown } from 'lucide-react';
+import { Bell, Search, User, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../SupabaseClient/supabaseClient"; // adjust path if folder name different
 
 interface HeaderProps {
   activeSection: string;
 }
 
 export default function Header({ activeSection }: HeaderProps) {
+  const navigate = useNavigate();
+
   const getSectionTitle = (section: string) => {
     const titles: Record<string, string> = {
-      dashboard: 'Dashboard Overview',
-      users: 'User Management',
-      vendors: 'Vendor Management',
-      orders: 'Order Management',
-      feedback: 'Feedback Management',
-      analytics: 'Analytics Dashboard',
-      locations: 'Location Insights',
-      admin: 'Administrative Features',
-      reports: 'Reports & Documentation',
-      settings: 'System Settings'
+      dashboard: "Dashboard Overview",
+      users: "User Management",
+      vendors: "Vendor Management",
+      orders: "Order Management",
+      feedback: "Feedback Management",
+      analytics: "Analytics Dashboard",
+      locations: "Location Insights",
+      admin: "Administrative Features",
+      reports: "Reports & Documentation",
+      settings: "System Settings",
     };
-    return titles[section] || 'Dashboard';
+    return titles[section] || "Dashboard";
+  };
+
+  const handleLogout = async () => {
+    try {
+      // sign out from supabase
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Error logging out", err);
+    }
+
+    // clear local storage user
+    localStorage.removeItem("user");
+
+    // go to login page
+    navigate("/login");
   };
 
   return (
     <header className="bg-white border-b border-gray-200 py-4 px-20">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{getSectionTitle(activeSection)}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {getSectionTitle(activeSection)}
+          </h2>
           <p className="text-sm text-gray-500 mt-1">
             Manage your rental platform with comprehensive administrative tools
           </p>
@@ -60,6 +80,14 @@ export default function Header({ activeSection }: HeaderProps) {
             </div>
             <ChevronDown className="h-4 w-4 text-gray-400" />
           </div>
+
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            className="px-3 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-100"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </header>
